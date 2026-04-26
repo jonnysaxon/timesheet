@@ -8,57 +8,23 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root {
-    --bg: #0f1117;
-    --surface: #1a1d27;
-    --surface2: #22263a;
-    --border: #2e3347;
-    --accent: #4f8ef7;
-    --green: #22c55e;
-    --red: #ef4444;
-    --amber: #f59e0b;
-    --purple: #a78bfa;
-    --text: #e8eaf0;
-    --text2: #8b90a7;
-    --text3: #5a5f75;
-    --mono: 'IBM Plex Mono', monospace;
-    --sans: 'IBM Plex Sans', sans-serif;
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a; --border: #2e3347;
+    --accent: #4f8ef7; --green: #22c55e; --red: #ef4444; --amber: #f59e0b;
+    --purple: #a78bfa; --text: #e8eaf0; --text2: #8b90a7; --text3: #5a5f75;
+    --mono: 'IBM Plex Mono', monospace; --sans: 'IBM Plex Sans', sans-serif;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
-
-  /* HEADER */
-  .header {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 14px 20px;
-    display: flex; align-items: center; justify-content: space-between;
-    position: sticky; top: 0; z-index: 100; gap: 10px;
-  }
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; gap: 10px; }
   .header-title { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
   .week-nav { display: flex; align-items: center; gap: 8px; }
   .week-label { font-family: var(--mono); font-size: 11px; color: var(--text2); min-width: 150px; text-align: center; }
-  .btn-icon {
-    background: var(--surface2); border: 1px solid var(--border); color: var(--text2);
-    width: 28px; height: 28px; border-radius: 6px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all 0.15s; flex-shrink: 0;
-  }
+  .btn-icon { background: var(--surface2); border: 1px solid var(--border); color: var(--text2); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all 0.15s; flex-shrink: 0; }
   .btn-icon:hover { border-color: var(--accent); color: var(--accent); }
-  .settings-btn {
-    background: var(--surface2); border: 1px solid var(--border); color: var(--text3);
-    width: 28px; height: 28px; border-radius: 6px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; font-size: 15px; transition: all 0.15s; flex-shrink: 0;
-  }
+  .settings-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text3); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; transition: all 0.15s; flex-shrink: 0; }
   .settings-btn:hover { border-color: var(--amber); color: var(--amber); }
-
-  /* MAIN */
   .main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 90px; }
-
-  /* BUTTONS */
-  .btn {
-    font-family: var(--sans); font-size: 13px; font-weight: 500;
-    padding: 7px 14px; border-radius: 7px; border: 1px solid var(--border);
-    cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
-  }
+  .btn { font-family: var(--sans); font-size: 13px; font-weight: 500; padding: 7px 14px; border-radius: 7px; border: 1px solid var(--border); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   .btn-primary:hover:not(:disabled) { opacity: 0.88; }
@@ -74,15 +40,11 @@
   .btn-rollback:hover:not(:disabled) { background: rgba(245,158,11,0.15); }
   .btn-email { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: var(--amber); }
   .btn-email:hover:not(:disabled) { background: rgba(245,158,11,0.18); }
-
-  /* TABS */
   .tab-bar { display: flex; gap: 4px; margin-bottom: 20px; background: var(--surface); padding: 4px; border-radius: 9px; border: 1px solid var(--border); }
   .tab { flex: 1; padding: 8px 12px; border-radius: 6px; border: none; background: none; color: var(--text2); font-family: var(--sans); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; text-align: center; }
   .tab.active { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
-
-  /* JOB CARDS */
   .job-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
   .section-label { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
   .job-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; overflow: hidden; transition: border-color 0.15s; }
@@ -95,14 +57,10 @@
   .job-card.open .chevron { transform: rotate(180deg); }
   .job-card-body { display: none; padding: 0 16px 16px; border-top: 1px solid var(--border); }
   .job-card.open .job-card-body { display: block; }
-
-  /* AI TOOLBAR */
   .ai-toolbar { display: flex; align-items: center; gap: 8px; margin-top: 14px; margin-bottom: 4px; flex-wrap: wrap; }
   .ai-status { font-size: 11px; color: var(--text3); font-family: var(--mono); flex: 1; }
   .ai-status.error { color: var(--red); }
   .ai-status.success { color: var(--green); }
-
-  /* DAYS */
   .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 10px; }
   @media (max-width: 800px) { .days-grid { grid-template-columns: repeat(4, 1fr); } }
   @media (max-width: 500px) { .days-grid { grid-template-columns: 1fr 1fr; } }
@@ -112,25 +70,18 @@
   .day-input:focus { outline: none; border-color: var(--accent); background: #1e2235; }
   .day-input::placeholder { color: var(--text3); font-size: 11px; }
   .day-input.has-value { border-color: rgba(79,142,247,0.35); }
-
-  /* HOURS INPUT */
   .hours-input-wrap { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
   .hours-input-wrap label { font-size: 10px; color: var(--text3); font-family: var(--mono); white-space: nowrap; }
-  .hours-input {
-    width: 68px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
-    color: var(--text); font-family: var(--mono); font-size: 12px; padding: 4px 8px;
-    transition: border-color 0.15s; text-align: center;
-  }
+  .hours-input { width: 68px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--mono); font-size: 12px; padding: 4px 8px; transition: border-color 0.15s; text-align: center; }
   .hours-input:focus { outline: none; border-color: var(--green); }
   .hours-input.has-value { border-color: rgba(34,197,94,0.4); color: var(--green); }
-
-  /* SUMMARY */
+  .day-weekend .day-label { color: #4a5068; }
+  .day-weekend .day-input { background: #181b28; border-color: #252838; }
+  .day-weekend .day-input.has-value { border-color: rgba(79,142,247,0.25); }
   .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
   .summary-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
   .summary-output { font-family: var(--mono); font-size: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; color: var(--text); white-space: pre-wrap; line-height: 1.7; word-break: break-word; }
   .summary-output .day-tag { color: var(--amber); font-weight: 600; }
-
-  /* HOURS SUMMARY TABLE */
   .hours-table-wrap { overflow-x: auto; margin-top: 8px; }
   .hours-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
   .hours-table th { background: var(--surface2); color: var(--text3); font-weight: 600; padding: 8px 10px; text-align: center; border: 1px solid var(--border); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
@@ -143,11 +94,9 @@
   .hours-table tfoot td.col-job { color: var(--text3); }
   .hours-table .row-total { color: var(--purple); font-weight: 600; background: rgba(167,139,250,0.06); }
   .hours-table tfoot .row-total { color: var(--amber); background: rgba(245,158,11,0.08); }
-
-  /* MODALS */
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
   .modal-overlay.open { display: flex; }
-  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; width: 100%; max-width: 420px; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; }
   .modal-title { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 18px; }
   .form-group { margin-bottom: 14px; }
   .form-label { display: block; font-size: 11px; font-weight: 500; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -155,37 +104,41 @@
   .form-input:focus { outline: none; border-color: var(--accent); }
   .form-input::placeholder { color: var(--text3); }
   .form-hint { font-size: 11px; color: var(--text3); margin-top: 5px; line-height: 1.5; }
+  .modal-divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
   .modal-actions { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
-
-  /* FOOTER */
   .footer-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); padding: 10px 16px; display: flex; gap: 8px; justify-content: flex-end; z-index: 99; flex-wrap: wrap; }
-
-  /* MISC */
   .empty-state { text-align: center; padding: 48px 24px; color: var(--text3); font-size: 13px; }
   .empty-state .icon { font-size: 32px; margin-bottom: 10px; }
   .today-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; display: inline-block; }
-  .api-warning { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--amber); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-  .api-warning button { margin-left: auto; background: none; border: 1px solid rgba(245,158,11,0.4); color: var(--amber); border-radius: 5px; padding: 3px 10px; font-size: 11px; cursor: pointer; white-space: nowrap; }
-  .api-warning button:hover { background: rgba(245,158,11,0.12); }
+
+  /* Notice bars (API warning + backup reminder) */
+  .notice-bar { border-radius: 8px; padding: 10px 14px; font-size: 12px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .notice-bar .notice-msg { flex: 1; min-width: 160px; }
+  .notice-bar .notice-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .notice-bar button { border-radius: 5px; padding: 3px 10px; font-size: 11px; cursor: pointer; white-space: nowrap; border: 1px solid; background: none; }
+  .notice-warning { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); color: var(--amber); }
+  .notice-warning button { border-color: rgba(245,158,11,0.4); color: var(--amber); }
+  .notice-warning button:hover { background: rgba(245,158,11,0.12); }
+  .notice-backup { background: rgba(79,142,247,0.07); border: 1px solid rgba(79,142,247,0.22); color: var(--accent); }
+  .notice-backup button.primary { border-color: rgba(79,142,247,0.4); color: var(--accent); }
+  .notice-backup button.primary:hover { background: rgba(79,142,247,0.12); }
+  .notice-backup button.dismiss { border-color: var(--border); color: var(--text3); }
+  .notice-backup button.dismiss:hover { border-color: var(--text3); color: var(--text2); }
+
   @keyframes spin { to { transform: rotate(360deg); } }
   .spinner { display: inline-block; width: 11px; height: 11px; border: 2px solid rgba(167,139,250,0.3); border-top-color: var(--purple); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; }
-
-  /* Weekend day styling */
-  .day-weekend .day-label { color: #4a5068; }
-  .day-weekend .day-input { background: #181b28; border-color: #252838; }
-  .day-weekend .day-input.has-value { border-color: rgba(79,142,247,0.25); }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div class="header-title">⏱ Timesheet</div>
+  <div class="header-title">&#9201; Timesheet</div>
   <div class="week-nav">
-    <button class="btn-icon" onclick="changeWeek(-1)">‹</button>
+    <button class="btn-icon" onclick="changeWeek(-1)">&#8249;</button>
     <div class="week-label" id="weekLabel"></div>
-    <button class="btn-icon" onclick="changeWeek(1)">›</button>
+    <button class="btn-icon" onclick="changeWeek(1)">&#8250;</button>
   </div>
-  <button class="settings-btn" onclick="openSettings()" title="Settings">⚙</button>
+  <button class="settings-btn" onclick="openSettings()" title="Settings">&#9881;</button>
 </div>
 
 <div class="main">
@@ -195,38 +148,36 @@
     <button class="tab" onclick="switchTab('hours',this)">Hours Summary</button>
   </div>
 
-  <!-- ENTRY -->
   <div class="tab-panel active" id="tab-entry">
+    <div id="backupReminder"></div>
     <div id="apiWarning"></div>
     <div class="job-header">
       <span class="section-label">Job Codes</span>
       <button class="btn btn-primary" onclick="openAddModal()">+ Add Job Code</button>
     </div>
-    <div id="jobList"><div class="empty-state"><div class="icon">📋</div>No job codes yet. Add one to get started.</div></div>
+    <div id="jobList"><div class="empty-state"><div class="icon">&#128203;</div>No job codes yet. Add one to get started.</div></div>
   </div>
 
-  <!-- SUMMARY -->
   <div class="tab-panel" id="tab-summary">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
       <span class="section-label">Week Summary</span>
-      <button class="btn btn-email" onclick="emailSummary()">✉ Email Summary</button>
+      <button class="btn btn-email" onclick="emailSummary()">&#9993; Email Summary</button>
     </div>
-    <div id="summaryList"><div class="empty-state"><div class="icon">📊</div>Add job codes and entries to see your summary.</div></div>
+    <div id="summaryList"></div>
   </div>
 
-  <!-- HOURS SUMMARY -->
   <div class="tab-panel" id="tab-hours">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
       <span class="section-label">Hours Summary</span>
     </div>
-    <div id="hoursSummaryList"><div class="empty-state"><div class="icon">🕐</div>Add hours to your entries to see the summary.</div></div>
+    <div id="hoursSummaryList"></div>
   </div>
 </div>
 
 <div class="footer-bar">
   <button class="btn btn-secondary" onclick="clearWeek()">Clear Week</button>
-  <button class="btn btn-email" onclick="emailSummary()">✉ Email</button>
-  <button class="btn btn-green" onclick="exportExcel()">⬇ Excel</button>
+  <button class="btn btn-email" onclick="emailSummary()">&#9993; Email</button>
+  <button class="btn btn-green" onclick="exportExcel()">&#8595; Excel</button>
 </div>
 
 <!-- ADD/EDIT JOB MODAL -->
@@ -250,12 +201,12 @@
 
 <!-- SETTINGS MODAL -->
 <div class="modal-overlay" id="settingsModal">
-  <div class="modal">
-    <div class="modal-title">⚙ Settings</div>
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title">&#9881; Settings</div>
     <div class="form-group">
       <label class="form-label">Anthropic API Key</label>
-      <input class="form-input" id="inputApiKey" type="password" placeholder="sk-ant-…">
-      <div class="form-hint">Stored only on this device. Never sent anywhere except api.anthropic.com. Get a key at console.anthropic.com</div>
+      <input class="form-input" id="inputApiKey" type="password" placeholder="sk-ant-...">
+      <div class="form-hint">Stored only on this device. Never sent anywhere except api.anthropic.com.</div>
     </div>
     <div class="form-group">
       <label class="form-label">Your Email Address</label>
@@ -264,8 +215,29 @@
     </div>
     <div class="form-group">
       <label class="form-label">Your Role (optional)</label>
-      <input class="form-input" id="inputRole" placeholder="e.g. Oracle DBA – Infrastructure">
+      <input class="form-input" id="inputRole" placeholder="e.g. Oracle DBA - Infrastructure">
       <div class="form-hint">Helps AI write comments in the right professional context.</div>
+    </div>
+    <hr class="modal-divider">
+    <div class="form-group">
+      <label class="form-label">App URL (for update check)</label>
+      <input class="form-input" id="inputAppUrl" placeholder="https://yourname.github.io/repo/index.html">
+      <div class="form-hint">Your GitHub Pages URL. Tapping Reload fetches the latest version, bypassing Safari cache.</div>
+    </div>
+    <div style="margin-bottom:16px">
+      <button class="btn btn-secondary" style="width:100%" onclick="checkForUpdate()">&#8635; Reload Latest Version</button>
+    </div>
+    <hr class="modal-divider">
+    <div class="form-group">
+      <label class="form-label">Data Backup &amp; Restore</label>
+      <div class="form-hint" style="margin-bottom:8px">Export saves all entries, hours and job codes as a JSON file. Save to iCloud Files for safekeeping. Recommended before iOS updates.</div>
+      <div id="lastBackupInfo" style="font-size:11px;font-family:var(--mono);margin-bottom:10px;color:var(--text3)"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-green" style="flex:1" onclick="exportBackup()">&#8595; Export Backup</button>
+        <button class="btn btn-secondary" style="flex:1" onclick="document.getElementById('importFile').click()">&#8593; Import Backup</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importBackup(this)">
+      </div>
+      <div id="backupStatus" style="margin-top:8px;font-size:11px;font-family:var(--mono)"></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('settingsModal')">Cancel</button>
@@ -275,397 +247,389 @@
 </div>
 
 <script>
-const STORAGE_KEY = 'timesheet_v4';
-let state = loadState();
-let currentWeekStart = getWeekStart(new Date());
-let editingJobId = null;
+var STORAGE_KEY = 'timesheet_v4';
+var BACKUP_WARN_DAYS = 7;
+var SNOOZE_DAYS = 2;
+var DAYS = ['Sat','Sun','Mon','Tue','Wed','Thu','Fri'];
+var WEEKEND_IDX = [0, 1]; // Sat, Sun are indices 0 and 1
 
-// All 7 days
-const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-const WEEKEND_IDX = [5, 6]; // Sat, Sun
+var state = loadState();
+var currentWeekStart = getWeekStart(new Date());
+var editingJobId = null;
 
 function loadState() {
   try {
-    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    var raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (raw) return raw;
-    // Attempt migration from v3
-    const old = JSON.parse(localStorage.getItem('timesheet_v3'));
-    if (old) {
-      // v3 had 5-day entries (idx 0–4 = Mon–Fri), map them directly since indices match
-      return { jobs: old.jobs||[], entries: old.entries||{}, hours: {}, settings: old.settings||{} };
-    }
-  } catch {}
-  return { jobs:[], entries:{}, hours:{}, settings:{} };
+    var old = JSON.parse(localStorage.getItem('timesheet_v3'));
+    if (old) return { jobs: old.jobs||[], entries: old.entries||{}, hours:{}, rollbacks:{}, settings: old.settings||{} };
+  } catch(e) {}
+  return { jobs:[], entries:{}, hours:{}, rollbacks:{}, settings:{} };
 }
 function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
 function getWeekStart(d) {
-  const date = new Date(d), day = date.getDay();
-  date.setDate(date.getDate() + (day===0 ? -6 : 1-day));
+  // Week runs Sat–Fri. Find the most recent Saturday.
+  var date = new Date(d), day = date.getDay(); // 0=Sun,1=Mon,...,6=Sat
+  var diff = (day === 6) ? 0 : -(day + 1); // go back to Saturday
+  date.setDate(date.getDate() + diff);
   date.setHours(0,0,0,0); return date;
 }
 function getWeekDates(ws) {
-  return DAYS.map((_,i) => { const d=new Date(ws); d.setDate(d.getDate()+i); return d; });
+  return DAYS.map(function(_,i){ var d=new Date(ws); d.setDate(d.getDate()+i); return d; });
 }
 function weekKey(ws) { return ws.toISOString().slice(0,10); }
 function formatDate(d) { return d.toLocaleDateString('en-NZ',{day:'2-digit',month:'short'}); }
-function isToday(d) { const t=new Date(); return d.getDate()===t.getDate()&&d.getMonth()===t.getMonth()&&d.getFullYear()===t.getFullYear(); }
+function isToday(d) { var t=new Date(); return d.getDate()===t.getDate()&&d.getMonth()===t.getMonth()&&d.getFullYear()===t.getFullYear(); }
 function changeWeek(dir) { currentWeekStart=new Date(currentWeekStart); currentWeekStart.setDate(currentWeekStart.getDate()+dir*7); render(); }
 
-// Entry keys
-function entryKey(jobId,ws,i) { return `${jobId}__${weekKey(ws)}__${i}`; }
+function entryKey(jobId,ws,i) { return jobId+'__'+weekKey(ws)+'__'+i; }
 function getEntry(jobId,i) { return state.entries[entryKey(jobId,currentWeekStart,i)]||''; }
 function setEntry(jobId,i,val) { state.entries[entryKey(jobId,currentWeekStart,i)]=val; saveState(); }
 
-// Hours keys
-function hoursKey(jobId,ws,i) { return `h__${jobId}__${weekKey(ws)}__${i}`; }
+function hoursKey(jobId,ws,i) { return 'h__'+jobId+'__'+weekKey(ws)+'__'+i; }
 function getHours(jobId,i) { return state.hours[hoursKey(jobId,currentWeekStart,i)]||''; }
 function setHours(jobId,i,val) {
-  if (val===''||val===null) delete state.hours[hoursKey(jobId,currentWeekStart,i)];
-  else state.hours[hoursKey(jobId,currentWeekStart,i)]=val;
+  var v = parseFloat(val);
+  if (!val || isNaN(v) || v===0) delete state.hours[hoursKey(jobId,currentWeekStart,i)];
+  else state.hours[hoursKey(jobId,currentWeekStart,i)] = String(v);
   saveState();
 }
 
-// AI rollback — store per job per week a snapshot of entries before AI expansion
-function rollbackKey(jobId,ws) { return `rb__${jobId}__${weekKey(ws)}`; }
+function rollbackKey(jobId,ws) { return 'rb__'+jobId+'__'+weekKey(ws); }
 function saveRollback(jobId) {
-  const snap = {};
-  DAYS.forEach((_,i) => { snap[i] = getEntry(jobId,i); });
-  if (!state.rollbacks) state.rollbacks = {};
+  var snap = {};
+  DAYS.forEach(function(_,i){ snap[i]=getEntry(jobId,i); });
+  if (!state.rollbacks) state.rollbacks={};
   state.rollbacks[rollbackKey(jobId,currentWeekStart)] = snap;
   saveState();
 }
 function getRollback(jobId) {
   if (!state.rollbacks) return null;
-  return state.rollbacks[rollbackKey(jobId,currentWeekStart)] || null;
+  return state.rollbacks[rollbackKey(jobId,currentWeekStart)]||null;
 }
 function clearRollback(jobId) {
   if (!state.rollbacks) return;
-  delete state.rollbacks[rollbackKey(jobId,currentWeekStart)];
-  saveState();
+  delete state.rollbacks[rollbackKey(jobId,currentWeekStart)]; saveState();
 }
 function rollbackAI(jobId) {
-  const snap = getRollback(jobId);
-  if (!snap) return;
+  var snap=getRollback(jobId); if (!snap) return;
   if (!confirm('Restore all entries for this job to their pre-AI state?')) return;
-  DAYS.forEach((_,i) => { setEntry(jobId,i,snap[i]||''); });
-  clearRollback(jobId);
-  render();
+  DAYS.forEach(function(_,i){ setEntry(jobId,i,snap[i]||''); });
+  clearRollback(jobId); render();
 }
 
+/* ── Backup reminder ── */
+function daysSince(isoStr) {
+  if (!isoStr) return 9999;
+  return Math.floor((Date.now()-new Date(isoStr))/86400000);
+}
+
+function renderBackupReminder() {
+  var el = document.getElementById('backupReminder');
+  if (!el) return;
+  if (!state.jobs || state.jobs.length===0) { el.innerHTML=''; return; }
+  if (daysSince(state.settings.backupSnooze) < SNOOZE_DAYS) { el.innerHTML=''; return; }
+  var days = daysSince(state.settings.lastBackup);
+  if (days < BACKUP_WARN_DAYS) { el.innerHTML=''; return; }
+  var msg = state.settings.lastBackup
+    ? 'Backup is '+days+' day'+(days===1?'':'s')+' old &mdash; export to iCloud Files to keep your data safe.'
+    : 'No backup yet &mdash; export to iCloud Files to keep your data safe.';
+  el.innerHTML = '<div class="notice-bar notice-backup">'
+    +'<span class="notice-msg">&#128190; '+msg+'</span>'
+    +'<div class="notice-actions">'
+    +'<button class="primary" onclick="exportBackupFromReminder()">Export Now</button>'
+    +'<button class="dismiss" onclick="snoozeBackup()">Later</button>'
+    +'</div></div>';
+}
+
+function exportBackupFromReminder() { exportBackup(); }
+function snoozeBackup() {
+  state.settings.backupSnooze = new Date().toISOString(); saveState();
+  var el=document.getElementById('backupReminder'); if(el) el.innerHTML='';
+}
+/* ────────────────────── */
+
 function render() {
-  renderWeekLabel(); renderApiWarning(); renderJobs();
-  const active = document.querySelector('.tab-panel.active');
+  renderWeekLabel(); renderApiWarning(); renderBackupReminder(); renderJobs();
+  var active=document.querySelector('.tab-panel.active');
   if (active && active.id==='tab-summary') renderSummary();
   if (active && active.id==='tab-hours') renderHoursSummary();
 }
 
 function renderWeekLabel() {
-  const d=getWeekDates(currentWeekStart);
-  document.getElementById('weekLabel').textContent=`${formatDate(d[0])} – ${formatDate(d[6])}`;
+  var d=getWeekDates(currentWeekStart);
+  document.getElementById('weekLabel').textContent=formatDate(d[0])+' - '+formatDate(d[6]);
 }
 
 function renderApiWarning() {
-  const el=document.getElementById('apiWarning');
+  var el=document.getElementById('apiWarning');
   el.innerHTML = state.settings.apiKey ? '' :
-    `<div class="api-warning">⚠ No API key — AI expansion unavailable. <button onclick="openSettings()">Configure</button></div>`;
+    '<div class="notice-bar notice-warning">&#9888; No API key &mdash; AI expansion unavailable.<div class="notice-actions"><button onclick="openSettings()">Configure</button></div></div>';
 }
 
 function renderJobs() {
-  const el=document.getElementById('jobList');
-  if (!state.jobs.length) { el.innerHTML=`<div class="empty-state"><div class="icon">📋</div>No job codes yet. Add one to get started.</div>`; return; }
-  const dates=getWeekDates(currentWeekStart);
-  el.innerHTML=state.jobs.map(job=>{
-    const hasRollback = !!getRollback(job.id);
-    return `
-    <div class="job-card" id="card-${job.id}">
-      <div class="job-card-header" onclick="toggleCard('${job.id}')">
-        <span class="job-code-badge">${esc(job.code)}</span>
-        <span class="job-name">${esc(job.name||'')}</span>
-        <div class="job-card-actions">
-          <button class="btn btn-secondary" style="padding:4px 8px;font-size:11px" onclick="event.stopPropagation();openEditModal('${job.id}')">Edit</button>
-          <button class="btn btn-danger" style="padding:4px 8px;font-size:11px" onclick="event.stopPropagation();deleteJobThisWeek('${job.id}')">✕ Week</button>
-          <button class="btn btn-danger" style="padding:4px 8px;font-size:11px;opacity:0.7" onclick="event.stopPropagation();deleteJobAll('${job.id}')">✕ All</button>
-          <span class="chevron">▼</span>
-        </div>
-      </div>
-      <div class="job-card-body">
-        <div class="ai-toolbar">
-          <button class="btn btn-ai" id="ai-btn-${job.id}" onclick="expandWithAI('${job.id}')" ${!state.settings.apiKey?'disabled title="Set API key in Settings"':''}>
-            ✦ AI Expand Comments
-          </button>
-          ${hasRollback ? `<button class="btn btn-rollback" onclick="rollbackAI('${job.id}')">↩ Rollback AI</button>` : ''}
-          <span class="ai-status" id="ai-status-${job.id}"></span>
-        </div>
-        <div class="days-grid">
-          ${DAYS.map((day,i)=>{
-            const val=getEntry(job.id,i), today=isToday(dates[i]);
-            const hrs=getHours(job.id,i);
-            const isWeekend=WEEKEND_IDX.includes(i);
-            return `<div class="day-entry${isWeekend?' day-weekend':''}">
-              <div class="day-label">${today?'<span class="today-dot"></span>':''}${day}<span class="day-date-sub">${formatDate(dates[i])}</span></div>
-              <textarea class="day-input${val?' has-value':''}" id="entry-${job.id}-${i}" placeholder="${isWeekend?'Weekend':'e.g. Meeting, RITM123'}" rows="3"
-                onchange="setEntry('${job.id}',${i},this.value);this.classList.toggle('has-value',this.value.trim().length>0)"
-              >${esc(val)}</textarea>
-              <div class="hours-input-wrap">
-                <label>hrs</label>
-                <input type="number" class="hours-input${hrs?' has-value':''}" id="hours-${job.id}-${i}"
-                  min="0" max="24" step="0.25" placeholder="0"
-                  value="${esc(hrs)}"
-                  onchange="setHours('${job.id}',${i},this.value.trim());this.classList.toggle('has-value',this.value.trim()!==''&&this.value.trim()!=='0')">
-              </div>
-            </div>`;
-          }).join('')}
-        </div>
-      </div>
-    </div>`;
+  var el=document.getElementById('jobList');
+  if (!state.jobs.length) { el.innerHTML='<div class="empty-state"><div class="icon">&#128203;</div>No job codes yet. Add one to get started.</div>'; return; }
+  var dates=getWeekDates(currentWeekStart);
+  el.innerHTML=state.jobs.map(function(job){
+    var hasRollback=!!getRollback(job.id);
+    var daysHtml=DAYS.map(function(day,i){
+      var val=getEntry(job.id,i), hrs=getHours(job.id,i), today=isToday(dates[i]), isWE=WEEKEND_IDX.indexOf(i)>=0;
+      return '<div class="day-entry'+(isWE?' day-weekend':'')+'">'
+        +'<div class="day-label">'+(today?'<span class="today-dot"></span>':'')+day
+        +'<span class="day-date-sub">'+formatDate(dates[i])+'</span></div>'
+        +'<textarea class="day-input'+(val?' has-value':'')+'" id="entry-'+job.id+'-'+i+'"'
+        +' placeholder="'+(isWE?'Weekend':'e.g. Meeting, RITM123')+'" rows="3"'
+        +' onchange="setEntry(\''+job.id+'\','+i+',this.value);this.classList.toggle(\'has-value\',this.value.trim().length>0)"'
+        +'>'+esc(val)+'</textarea>'
+        +'<div class="hours-input-wrap"><label>hrs</label>'
+        +'<input type="number" class="hours-input'+(hrs?' has-value':'')+'" id="hours-'+job.id+'-'+i+'"'
+        +' min="0" max="24" step="0.25" placeholder="0" value="'+esc(hrs)+'"'
+        +' onchange="setHours(\''+job.id+'\','+i+',this.value);this.classList.toggle(\'has-value\',parseFloat(this.value)>0)">'
+        +'</div></div>';
+    }).join('');
+    return '<div class="job-card" id="card-'+job.id+'">'
+      +'<div class="job-card-header" onclick="toggleCard(\''+job.id+'\')">'
+      +'<span class="job-code-badge">'+esc(job.code)+'</span>'
+      +'<span class="job-name">'+esc(job.name||'')+'</span>'
+      +'<div class="job-card-actions">'
+      +'<button class="btn btn-secondary" style="padding:4px 8px;font-size:11px" onclick="event.stopPropagation();openEditModal(\''+job.id+'\')">Edit</button>'
+      +'<button class="btn btn-danger" style="padding:4px 8px;font-size:11px" onclick="event.stopPropagation();deleteJobThisWeek(\''+job.id+'\')">X Week</button>'
+      +'<button class="btn btn-danger" style="padding:4px 8px;font-size:11px;opacity:0.7" onclick="event.stopPropagation();deleteJobAll(\''+job.id+'\')">X All</button>'
+      +'<span class="chevron">&#9660;</span>'
+      +'</div></div>'
+      +'<div class="job-card-body">'
+      +'<div class="ai-toolbar">'
+      +'<button class="btn btn-ai" id="ai-btn-'+job.id+'" onclick="expandWithAI(\''+job.id+'\')"'+(state.settings.apiKey?'':' disabled title="Set API key in Settings"')+'>&#10022; AI Expand Comments</button>'
+      +(hasRollback?'<button class="btn btn-rollback" onclick="rollbackAI(\''+job.id+'\')">&#8617; Rollback AI</button>':'')
+      +'<span class="ai-status" id="ai-status-'+job.id+'"></span>'
+      +'</div>'
+      +'<div class="days-grid">'+daysHtml+'</div>'
+      +'</div></div>';
   }).join('');
 }
 
-function toggleCard(id) { document.getElementById(`card-${id}`).classList.toggle('open'); }
+function toggleCard(id) { document.getElementById('card-'+id).classList.toggle('open'); }
 
-// Delete job from this week only (clear entries/hours for current week, do not remove job)
 function deleteJobThisWeek(jobId) {
-  if (!confirm('Clear all entries for this job in the current week only? The job code will remain for other weeks.')) return;
-  const wk = weekKey(currentWeekStart);
-  DAYS.forEach((_,i) => {
+  if (!confirm('Clear this job\'s entries for the current week only? The job code stays for other weeks.')) return;
+  DAYS.forEach(function(_,i){
     delete state.entries[entryKey(jobId,currentWeekStart,i)];
     delete state.hours[hoursKey(jobId,currentWeekStart,i)];
   });
   saveState(); render();
 }
-
-// Delete job from ALL weeks (removes job code entirely)
 function deleteJobAll(jobId) {
   if (!confirm('Permanently delete this job code and ALL its entries across all weeks?')) return;
-  state.jobs = state.jobs.filter(j=>j.id!==jobId);
-  // Clean up entries/hours for this job across all weeks
-  Object.keys(state.entries).forEach(k=>{ if(k.startsWith(jobId+'__')) delete state.entries[k]; });
-  Object.keys(state.hours).forEach(k=>{ if(k.startsWith('h__'+jobId+'__')) delete state.hours[k]; });
+  state.jobs=state.jobs.filter(function(j){return j.id!==jobId;});
+  Object.keys(state.entries).forEach(function(k){if(k.indexOf(jobId+'__')===0) delete state.entries[k];});
+  Object.keys(state.hours).forEach(function(k){if(k.indexOf('h__'+jobId+'__')===0) delete state.hours[k];});
   saveState(); render();
 }
 
 function renderSummary() {
-  const el=document.getElementById('summaryList');
-  if (!state.jobs.length) { el.innerHTML=`<div class="empty-state"><div class="icon">📊</div>Add job codes and entries to see your summary.</div>`; return; }
-  let html='';
-  state.jobs.forEach(job=>{
-    const lines=[];
-    DAYS.forEach((day,i)=>{ const v=getEntry(job.id,i).trim(); if(v) lines.push(`#${day.toLowerCase()}\n${v}`); });
+  var el=document.getElementById('summaryList');
+  if (!state.jobs.length) { el.innerHTML='<div class="empty-state"><div class="icon">&#128202;</div>Add job codes and entries to see your summary.</div>'; return; }
+  var html='';
+  state.jobs.forEach(function(job){
+    var lines=[];
+    DAYS.forEach(function(day,i){ var v=getEntry(job.id,i).trim(); if(v) lines.push('#'+day.toLowerCase()+'\n'+v); });
     if (!lines.length) return;
-    const text=lines.join('\n\n');
-    html+=`<div class="summary-card">
-      <div class="summary-card-header">
-        <span class="job-code-badge">${esc(job.code)}</span>
-        ${job.name?`<span style="color:var(--text2);font-size:12px">${esc(job.name)}</span>`:''}
-        <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;margin-left:auto" onclick="copyText('summary-${job.id}',this)">Copy</button>
-      </div>
-      <div class="summary-output" id="summary-${job.id}">${fmtSummary(text)}</div>
-    </div>`;
+    html+='<div class="summary-card"><div class="summary-card-header">'
+      +'<span class="job-code-badge">'+esc(job.code)+'</span>'
+      +(job.name?'<span style="color:var(--text2);font-size:12px">'+esc(job.name)+'</span>':'')
+      +'<button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;margin-left:auto" onclick="copyText(\'summary-'+job.id+'\',this)">Copy</button>'
+      +'</div><div class="summary-output" id="summary-'+job.id+'">'+fmtSummary(lines.join('\n\n'))+'</div></div>';
   });
-  el.innerHTML=html||`<div class="empty-state"><div class="icon">✏️</div>No entries for this week yet.</div>`;
+  el.innerHTML=html||'<div class="empty-state"><div class="icon">&#9999;</div>No entries for this week yet.</div>';
 }
 
-function fmtSummary(t) {
-  return esc(t).replace(/#(mon|tue|wed|thu|fri|sat|sun)/gi,'<span class="day-tag">#$1</span>');
-}
+function fmtSummary(t) { return esc(t).replace(/#(mon|tue|wed|thu|fri|sat|sun)/gi,'<span class="day-tag">#$1</span>'); }
 
 function renderHoursSummary() {
-  const el = document.getElementById('hoursSummaryList');
-  if (!state.jobs.length) { el.innerHTML=`<div class="empty-state"><div class="icon">🕐</div>Add job codes and hours to see summary.</div>`; return; }
-
-  const dates = getWeekDates(currentWeekStart);
-
-  // Build data: jobId -> [hours per day]
-  const jobRows = state.jobs.map(job => ({
-    job,
-    dayHours: DAYS.map((_,i) => {
-      const h = parseFloat(getHours(job.id,i));
-      return isNaN(h) ? 0 : h;
-    })
-  }));
-
-  // Filter to jobs that have at least one hour entry
-  const activeRows = jobRows.filter(r => r.dayHours.some(h=>h>0));
-
-  if (!activeRows.length) {
-    el.innerHTML=`<div class="empty-state"><div class="icon">🕐</div>No hours entered for this week yet.</div>`;
-    return;
+  var el=document.getElementById('hoursSummaryList');
+  if (!state.jobs.length) { el.innerHTML='<div class="empty-state"><div class="icon">&#128336;</div>Add job codes and hours to see summary.</div>'; return; }
+  var dates=getWeekDates(currentWeekStart);
+  function fmtH(h) {
+    if (h<=0) return '-';
+    if (Number.isInteger(h)) return String(h);
+    return String(parseFloat(h.toFixed(2)));
   }
-
-  // Day totals
-  const dayTotals = DAYS.map((_,i) => activeRows.reduce((s,r)=>s+r.dayHours[i],0));
-  const weekTotal = dayTotals.reduce((a,b)=>a+b,0);
-
-  const fmtH = h => { if (h <= 0) return '–'; if (Number.isInteger(h)) return h; return parseFloat(h.toFixed(2)).toString(); };
-
-  let html = `<div class="hours-table-wrap"><table class="hours-table">
-    <thead><tr>
-      <th class="col-job">Job Code</th>
-      ${DAYS.map((day,i)=>`<th>${day}<br><span style="font-weight:400;font-size:9px">${formatDate(dates[i])}</span></th>`).join('')}
-      <th class="row-total" style="color:var(--purple)">Total</th>
-    </tr></thead>
-    <tbody>`;
-
-  activeRows.forEach(({job,dayHours}) => {
-    const rowTotal = dayHours.reduce((a,b)=>a+b,0);
-    html += `<tr>
-      <td class="col-job">${esc(job.code)}${job.name?`<br><span style="color:var(--text3);font-size:10px">${esc(job.name)}</span>`:''}  </td>
-      ${dayHours.map(h=>`<td class="${h>0?'has-hours':''}">${fmtH(h)}</td>`).join('')}
-      <td class="row-total">${fmtH(rowTotal)}</td>
-    </tr>`;
+  var jobRows=state.jobs.map(function(job){
+    return { job:job, dayHours:DAYS.map(function(_,i){ var h=parseFloat(getHours(job.id,i)); return isNaN(h)?0:h; }) };
   });
-
-  html += `</tbody><tfoot><tr>
-    <td class="col-job">Day Total</td>
-    ${dayTotals.map(h=>`<td>${fmtH(h)}</td>`).join('')}
-    <td class="row-total">${fmtH(weekTotal)}</td>
-  </tr></tfoot></table></div>`;
-
-  el.innerHTML = html;
+  var activeRows=jobRows.filter(function(r){ return r.dayHours.some(function(h){return h>0;}); });
+  if (!activeRows.length) { el.innerHTML='<div class="empty-state"><div class="icon">&#128336;</div>No hours entered for this week yet.</div>'; return; }
+  var dayTotals=DAYS.map(function(_,i){ return activeRows.reduce(function(s,r){return s+r.dayHours[i];},0); });
+  var weekTotal=dayTotals.reduce(function(a,b){return a+b;},0);
+  var html='<div class="hours-table-wrap"><table class="hours-table"><thead><tr>'
+    +'<th class="col-job">Job Code</th>'
+    +DAYS.map(function(day,i){ return '<th>'+day+'<br><span style="font-weight:400;font-size:9px">'+formatDate(dates[i])+'</span></th>'; }).join('')
+    +'<th class="row-total" style="color:var(--purple)">Total</th></tr></thead><tbody>';
+  activeRows.forEach(function(r){
+    var rt=r.dayHours.reduce(function(a,b){return a+b;},0);
+    html+='<tr><td class="col-job">'+esc(r.job.code)+(r.job.name?'<br><span style="color:var(--text3);font-size:10px">'+esc(r.job.name)+'</span>':'')+'</td>'
+      +r.dayHours.map(function(h){return '<td class="'+(h>0?'has-hours':'')+'">'+fmtH(h)+'</td>';}).join('')
+      +'<td class="row-total">'+fmtH(rt)+'</td></tr>';
+  });
+  html+='</tbody><tfoot><tr><td class="col-job">Day Total</td>'
+    +dayTotals.map(function(h){return '<td>'+fmtH(h)+'</td>';}).join('')
+    +'<td class="row-total">'+fmtH(weekTotal)+'</td></tr></tfoot></table></div>';
+  el.innerHTML=html;
 }
 
 function copyText(elId,btn) {
-  navigator.clipboard.writeText(document.getElementById(elId).innerText).then(()=>{
-    const o=btn.textContent; btn.textContent='✓ Copied'; btn.style.color='var(--green)';
-    setTimeout(()=>{ btn.textContent=o; btn.style.color=''; },1500);
+  navigator.clipboard.writeText(document.getElementById(elId).innerText).then(function(){
+    var o=btn.textContent; btn.textContent='Copied'; btn.style.color='var(--green)';
+    setTimeout(function(){btn.textContent=o;btn.style.color='';},1500);
   });
 }
 
 async function expandWithAI(jobId) {
-  const job=state.jobs.find(j=>j.id===jobId);
-  const apiKey=state.settings.apiKey;
+  var job=state.jobs.find(function(j){return j.id===jobId;});
+  var apiKey=state.settings.apiKey;
   if (!apiKey) { alert('Set your Anthropic API key in Settings first.'); return; }
-  const entries=DAYS.map((day,i)=>({day,text:getEntry(jobId,i).trim()})).filter(e=>e.text);
+  var entries=DAYS.map(function(day,i){return{day:day,text:getEntry(jobId,i).trim()};}).filter(function(e){return e.text;});
   if (!entries.length) { setAIStatus(jobId,'No entries to expand.','error'); return; }
-
-  // Save rollback snapshot before overwriting
   saveRollback(jobId);
-
-  const btn=document.getElementById(`ai-btn-${jobId}`);
-  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Expanding…'; setAIStatus(jobId,'');
-
-  const role=state.settings.role||'IT professional';
-  const dayList = DAYS.map(d=>d.toLowerCase()).join('|');
-  const prompt=`You are helping a ${role} write professional timesheet comments.
-Job code: ${job.code}${job.name?` (${job.name})`:''}
-
-Expand each day's brief notes into a clear, professional 1-3 sentence timesheet comment. Keep ticket numbers (RITM, CHG, INC, OEM, etc.) and system names exactly as written. Do not invent details. Return ONLY this exact format with no preamble or extra text:
-
-#mon
-[expanded text or leave blank]
-
-#tue
-[expanded text or leave blank]
-
-#wed
-[expanded text or leave blank]
-
-#thu
-[expanded text or leave blank]
-
-#fri
-[expanded text or leave blank]
-
-#sat
-[expanded text or leave blank]
-
-#sun
-[expanded text or leave blank]
-
-Daily notes:
-${entries.map(e=>`#${e.day.toLowerCase()}\n${e.text}`).join('\n\n')}`;
-
+  var btn=document.getElementById('ai-btn-'+jobId);
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Expanding...'; setAIStatus(jobId,'');
+  var role=state.settings.role||'IT professional';
+  var prompt='You are helping a '+role+' write professional timesheet comments.\nJob code: '+job.code+(job.name?' ('+job.name+')':'')+'\n\nExpand each day\'s brief notes into a clear, professional 1-3 sentence timesheet comment. Keep ticket numbers (RITM, CHG, INC, OEM, etc.) and system names exactly as written. Do not invent details. Return ONLY this exact format with no preamble:\n\n#sat\n[expanded or blank]\n\n#sun\n[expanded or blank]\n\n#mon\n[expanded or blank]\n\n#tue\n[expanded or blank]\n\n#wed\n[expanded or blank]\n\n#thu\n[expanded or blank]\n\n#fri\n[expanded or blank]\n\nDaily notes:\n'+entries.map(function(e){return '#'+e.day.toLowerCase()+'\n'+e.text;}).join('\n\n');
   try {
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    var res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})
     });
-    if (!res.ok) { const e=await res.json().catch(()=>({})); throw new Error(e.error?.message||`HTTP ${res.status}`); }
-    const data=await res.json();
-    const text=data.content?.find(b=>b.type==='text')?.text||'';
-    const dayMap={mon:0,tue:1,wed:2,thu:3,fri:4,sat:5,sun:6};
-    const blocks=text.split(/#(mon|tue|wed|thu|fri|sat|sun)/i);
-    for (let i=1;i<blocks.length-1;i+=2) {
-      const dk=blocks[i].toLowerCase(), content=(blocks[i+1]||'').trim(), idx=dayMap[dk];
+    if (!res.ok) { var e=await res.json().catch(function(){return{};}); throw new Error(e.error&&e.error.message?e.error.message:'HTTP '+res.status); }
+    var data=await res.json();
+    var text=data.content&&data.content.find(function(b){return b.type==='text';})?data.content.find(function(b){return b.type==='text';}).text:'';
+    var dayMap={sat:0,sun:1,mon:2,tue:3,wed:4,thu:5,fri:6};
+    var blocks=text.split(/#(mon|tue|wed|thu|fri|sat|sun)/i);
+    for (var i=1;i<blocks.length-1;i+=2) {
+      var dk=blocks[i].toLowerCase(), content=(blocks[i+1]||'').trim(), idx=dayMap[dk];
       if (idx!==undefined && content) {
         setEntry(jobId,idx,content);
-        const ta=document.getElementById(`entry-${jobId}-${idx}`);
+        var ta=document.getElementById('entry-'+jobId+'-'+idx);
         if (ta) { ta.value=content; ta.classList.add('has-value'); }
       }
     }
-    setAIStatus(jobId,'✓ Comments expanded — Rollback available','success');
-    setTimeout(()=>setAIStatus(jobId,''),4000);
-    // Re-render to show rollback button
+    setAIStatus(jobId,'Comments expanded - Rollback available','success');
+    setTimeout(function(){setAIStatus(jobId,'');},4000);
     render();
-  } catch(e) {
-    // If expansion failed, discard the rollback snapshot
+  } catch(err) {
     clearRollback(jobId);
-    setAIStatus(jobId,`Error: ${e.message}`,'error');
+    setAIStatus(jobId,'Error: '+err.message,'error');
   } finally {
-    btn.disabled=false; btn.innerHTML='✦ AI Expand Comments';
+    btn.disabled=false; btn.innerHTML='&#10022; AI Expand Comments';
   }
 }
 
-function setAIStatus(jobId,msg,type='') {
-  const el=document.getElementById(`ai-status-${jobId}`);
-  if (el) { el.textContent=msg; el.className='ai-status'+(type?` ${type}`:''); }
+function setAIStatus(jobId,msg,type) {
+  var el=document.getElementById('ai-status-'+jobId);
+  if (el) { el.textContent=msg; el.className='ai-status'+(type?' '+type:''); }
 }
 
 function emailSummary() {
-  const dates=getWeekDates(currentWeekStart);
-  const weekStr=`${formatDate(dates[0])} – ${formatDate(dates[6])}`;
-  let body=`Timesheet Summary – Week ${weekStr}\n\n`;
-  let hasContent=false;
-  state.jobs.forEach(job=>{
-    const lines=[];
-    DAYS.forEach((day,i)=>{ const v=getEntry(job.id,i).trim(); if(v) lines.push(`#${day.toLowerCase()}\n${v}`); });
+  var dates=getWeekDates(currentWeekStart);
+  var weekStr=formatDate(dates[0])+' - '+formatDate(dates[6]);
+  var body='Timesheet Summary - Week '+weekStr+'\n\n';
+  var hasContent=false;
+  state.jobs.forEach(function(job){
+    var lines=[];
+    DAYS.forEach(function(day,i){ var v=getEntry(job.id,i).trim(); if(v) lines.push('#'+day.toLowerCase()+'\n'+v); });
     if (!lines.length) return;
     hasContent=true;
-    body+=`──────────────────────────\nJOB CODE: ${job.code}${job.name?` – ${job.name}`:''}\n──────────────────────────\n${lines.join('\n\n')}\n\n`;
+    body+='---------------------------\nJOB CODE: '+job.code+(job.name?' - '+job.name:'')+'\n---------------------------\n'+lines.join('\n\n')+'\n\n';
   });
   if (!hasContent) { alert('No entries to email for this week.'); return; }
-  const mailto=`mailto:${encodeURIComponent(state.settings.email||'')}?subject=${encodeURIComponent('Timesheet – '+weekStr)}&body=${encodeURIComponent(body)}`;
-  window.location.href=mailto;
+  window.location.href='mailto:'+encodeURIComponent(state.settings.email||'')+'?subject='+encodeURIComponent('Timesheet - '+weekStr)+'&body='+encodeURIComponent(body);
 }
 
 function exportExcel() {
-  const dates=getWeekDates(currentWeekStart);
-  // Collect rows, then sort by date
-  const rawRows=[];
-  state.jobs.forEach(job=>{
-    DAYS.forEach((day,i)=>{
-      const v=getEntry(job.id,i).trim();
-      const h=getHours(job.id,i);
-      if (v||h) {
-        rawRows.push({
-          date: dates[i],
-          dateStr: dates[i].toLocaleDateString('en-NZ',{day:'2-digit',month:'2-digit',year:'numeric'}),
-          code: job.code,
-          hours: h ? parseFloat(h) : '',
-          comment: v
-        });
-      }
+  var dates=getWeekDates(currentWeekStart);
+  var rawRows=[];
+  state.jobs.forEach(function(job){
+    DAYS.forEach(function(day,i){
+      var v=getEntry(job.id,i).trim(), h=getHours(job.id,i);
+      if (v||h) rawRows.push({date:dates[i],dateStr:dates[i].toLocaleDateString('en-NZ',{day:'2-digit',month:'2-digit',year:'numeric'}),code:job.code,hours:h?parseFloat(h):'',comment:v});
     });
   });
   if (!rawRows.length) { alert('No entries to export.'); return; }
-  // Sort by date
-  rawRows.sort((a,b)=>a.date-b.date);
-  const rows=[['Date','Job Code','Hours','Comment']];
-  rawRows.forEach(r=>rows.push([r.dateStr, r.code, r.hours, r.comment]));
-  const wb=XLSX.utils.book_new(), ws=XLSX.utils.aoa_to_sheet(rows);
+  rawRows.sort(function(a,b){return a.date-b.date;});
+  var rows=[['Date','Job Code','Hours','Comment']];
+  rawRows.forEach(function(r){rows.push([r.dateStr,r.code,r.hours,r.comment]);});
+  var wb=XLSX.utils.book_new(), ws=XLSX.utils.aoa_to_sheet(rows);
   ws['!cols']=[{wch:12},{wch:16},{wch:8},{wch:60}];
   XLSX.utils.book_append_sheet(wb,ws,'Timesheet');
-  XLSX.writeFile(wb,`timesheet_${weekKey(currentWeekStart)}.xlsx`);
+  XLSX.writeFile(wb,'timesheet_'+weekKey(currentWeekStart)+'.xlsx');
 }
 
 function clearWeek() {
   if (!confirm('Clear all entries for this week?')) return;
-  const wk=weekKey(currentWeekStart);
-  Object.keys(state.entries).forEach(k=>{ if(k.includes(`__${wk}__`)) delete state.entries[k]; });
-  Object.keys(state.hours).forEach(k=>{ if(k.includes(`__${wk}__`)) delete state.hours[k]; });
+  var wk=weekKey(currentWeekStart);
+  Object.keys(state.entries).forEach(function(k){if(k.indexOf('__'+wk+'__')>=0) delete state.entries[k];});
+  Object.keys(state.hours).forEach(function(k){if(k.indexOf('__'+wk+'__')>=0) delete state.hours[k];});
   saveState(); render();
+}
+
+function exportBackup() {
+  var backup={exportedAt:new Date().toISOString(),version:STORAGE_KEY,data:state};
+  var blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  var ds=new Date().toLocaleDateString('en-NZ',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'-');
+  a.href=url; a.download='timesheet_backup_'+ds+'.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  state.settings.lastBackup=new Date().toISOString();
+  state.settings.backupSnooze=null;
+  saveState();
+  setBackupStatus('Backup exported successfully','var(--green)');
+  updateLastBackupInfo();
+  // Dismiss the reminder banner
+  var el=document.getElementById('backupReminder'); if(el) el.innerHTML='';
+}
+
+function importBackup(input) {
+  var file=input.files[0]; if (!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try {
+      var backup=JSON.parse(e.target.result);
+      if (!backup.data||!backup.data.jobs) throw new Error('Unrecognised backup format');
+      var dateStr=backup.exportedAt?new Date(backup.exportedAt).toLocaleString('en-NZ'):'unknown date';
+      if (!confirm('Restore backup from '+dateStr+'?\n\nThis will replace ALL current data.')) return;
+      state=backup.data;
+      if (!state.hours) state.hours={};
+      if (!state.rollbacks) state.rollbacks={};
+      saveState(); render();
+      setBackupStatus('Backup restored successfully','var(--green)');
+      updateLastBackupInfo();
+    } catch(err) { setBackupStatus('Import failed: '+err.message,'var(--red)'); }
+  };
+  reader.readAsText(file); input.value='';
+}
+
+function setBackupStatus(msg,color) {
+  var el=document.getElementById('backupStatus');
+  if (el) { el.textContent=msg; el.style.color=color; }
+}
+
+function updateLastBackupInfo() {
+  var el=document.getElementById('lastBackupInfo');
+  if (!el) return;
+  if (state.settings.lastBackup) {
+    var d=new Date(state.settings.lastBackup);
+    var days=Math.floor((Date.now()-d)/86400000);
+    var label=days===0?'today':days===1?'yesterday':days+' days ago';
+    el.textContent='Last backup: '+d.toLocaleDateString('en-NZ')+' ('+label+')';
+    el.style.color=days>=BACKUP_WARN_DAYS?'var(--amber)':'var(--green)';
+  } else {
+    el.textContent='No backup recorded yet.';
+    el.style.color='var(--text3)';
+  }
 }
 
 function openAddModal() {
@@ -674,22 +638,22 @@ function openAddModal() {
   document.getElementById('inputCode').value='';
   document.getElementById('inputName').value='';
   document.getElementById('addModal').classList.add('open');
-  setTimeout(()=>document.getElementById('inputCode').focus(),100);
+  setTimeout(function(){document.getElementById('inputCode').focus();},100);
 }
 function openEditModal(jobId) {
   editingJobId=jobId;
-  const job=state.jobs.find(j=>j.id===jobId);
+  var job=state.jobs.find(function(j){return j.id===jobId;});
   document.getElementById('modalTitle').textContent='Edit Job Code';
   document.getElementById('inputCode').value=job.code;
   document.getElementById('inputName').value=job.name||'';
   document.getElementById('addModal').classList.add('open');
 }
 function saveJobCode() {
-  const code=document.getElementById('inputCode').value.trim();
-  const name=document.getElementById('inputName').value.trim();
+  var code=document.getElementById('inputCode').value.trim();
+  var name=document.getElementById('inputName').value.trim();
   if (!code) { document.getElementById('inputCode').focus(); return; }
-  if (editingJobId) { const j=state.jobs.find(j=>j.id===editingJobId); if(j){j.code=code;j.name=name;} }
-  else state.jobs.push({id:uid(),code,name});
+  if (editingJobId) { var j=state.jobs.find(function(j){return j.id===editingJobId;}); if(j){j.code=code;j.name=name;} }
+  else state.jobs.push({id:uid(),code:code,name:name});
   saveState(); closeModal('addModal'); render();
 }
 
@@ -697,21 +661,32 @@ function openSettings() {
   document.getElementById('inputApiKey').value=state.settings.apiKey||'';
   document.getElementById('inputEmail').value=state.settings.email||'';
   document.getElementById('inputRole').value=state.settings.role||'';
+  document.getElementById('inputAppUrl').value=state.settings.appUrl||'';
+  document.getElementById('backupStatus').textContent='';
+  updateLastBackupInfo();
   document.getElementById('settingsModal').classList.add('open');
-  setTimeout(()=>document.getElementById('inputApiKey').focus(),100);
+  setTimeout(function(){document.getElementById('inputApiKey').focus();},100);
 }
 function saveSettings() {
   state.settings.apiKey=document.getElementById('inputApiKey').value.trim();
   state.settings.email=document.getElementById('inputEmail').value.trim();
   state.settings.role=document.getElementById('inputRole').value.trim();
+  state.settings.appUrl=document.getElementById('inputAppUrl').value.trim();
   saveState(); closeModal('settingsModal'); render();
 }
 
+function checkForUpdate() {
+  var url=document.getElementById('inputAppUrl').value.trim()||state.settings.appUrl;
+  if (!url) { alert('Enter your App URL first (e.g. https://yourname.github.io/repo/index.html)'); return; }
+  state.settings.appUrl=url; saveState();
+  window.location.href=url+(url.indexOf('?')>=0?'&':'?')+'_cb='+Date.now();
+}
+
 function switchTab(name,btn) {
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active');});
   btn.classList.add('active');
-  document.getElementById(`tab-${name}`).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
   if (name==='summary') renderSummary();
   if (name==='hours') renderHoursSummary();
 }
@@ -720,10 +695,10 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 function uid() { return Math.random().toString(36).slice(2,9); }
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-document.addEventListener('keydown',e=>{
-  if (e.key==='Escape') { closeModal('addModal'); closeModal('settingsModal'); }
-  if (e.key==='Enter'&&document.getElementById('addModal').classList.contains('open')&&document.activeElement?.tagName!=='TEXTAREA') saveJobCode();
-  if (e.key==='Enter'&&document.getElementById('settingsModal').classList.contains('open')&&document.activeElement?.tagName!=='TEXTAREA') saveSettings();
+document.addEventListener('keydown',function(e){
+  if (e.key==='Escape'){closeModal('addModal');closeModal('settingsModal');}
+  if (e.key==='Enter'&&document.getElementById('addModal').classList.contains('open')&&document.activeElement&&document.activeElement.tagName!=='TEXTAREA') saveJobCode();
+  if (e.key==='Enter'&&document.getElementById('settingsModal').classList.contains('open')&&document.activeElement&&document.activeElement.tagName!=='TEXTAREA') saveSettings();
 });
 
 render();
