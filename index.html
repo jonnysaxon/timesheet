@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weekly Timesheet</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3347;
+    --accent: #4f8ef7;
+    --green: #22c55e;
+    --red: #ef4444;
+    --amber: #f59e0b;
+    --purple: #a78bfa;
+    --text: #e8eaf0;
+    --text2: #8b90a7;
+    --text3: #5a5f75;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100; gap: 10px;
+  }
+  .header-title { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
+  .week-nav { display: flex; align-items: center; gap: 8px; }
+  .week-label { font-family: var(--mono); font-size: 11px; color: var(--text2); min-width: 130px; text-align: center; }
+  .btn-icon {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text2);
+    width: 28px; height: 28px; border-radius: 6px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all 0.15s; flex-shrink: 0;
+  }
+  .btn-icon:hover { border-color: var(--accent); color: var(--accent); }
+  .settings-btn {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text3);
+    width: 28px; height: 28px; border-radius: 6px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 15px; transition: all 0.15s; flex-shrink: 0;
+  }
+  .settings-btn:hover { border-color: var(--amber); color: var(--amber); }
+
+  /* MAIN */
+  .main { max-width: 900px; margin: 0 auto; padding: 20px 16px 90px; }
+
+  /* BUTTONS */
+  .btn {
+    font-family: var(--sans); font-size: 13px; font-weight: 500;
+    padding: 7px 14px; border-radius: 7px; border: 1px solid var(--border);
+    cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover:not(:disabled) { opacity: 0.88; }
+  .btn-secondary { background: var(--surface2); color: var(--text2); }
+  .btn-secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .btn-green { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.3); color: var(--green); }
+  .btn-green:hover:not(:disabled) { background: rgba(34,197,94,0.2); }
+  .btn-danger { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.25); color: var(--red); }
+  .btn-danger:hover:not(:disabled) { background: rgba(239,68,68,0.18); }
+  .btn-ai { background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.3); color: var(--purple); font-size: 11px; padding: 4px 10px; }
+  .btn-ai:hover:not(:disabled) { background: rgba(167,139,250,0.22); }
+  .btn-email { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: var(--amber); }
+  .btn-email:hover:not(:disabled) { background: rgba(245,158,11,0.18); }
+
+  /* TABS */
+  .tab-bar { display: flex; gap: 4px; margin-bottom: 20px; background: var(--surface); padding: 4px; border-radius: 9px; border: 1px solid var(--border); }
+  .tab { flex: 1; padding: 8px 12px; border-radius: 6px; border: none; background: none; color: var(--text2); font-family: var(--sans); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; text-align: center; }
+  .tab.active { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* JOB CARDS */
+  .job-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .section-label { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
+  .job-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; overflow: hidden; transition: border-color 0.15s; }
+  .job-card:hover { border-color: #3a3f5a; }
+  .job-card-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; cursor: pointer; user-select: none; gap: 10px; }
+  .job-code-badge { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); background: rgba(79,142,247,0.12); border: 1px solid rgba(79,142,247,0.25); padding: 3px 10px; border-radius: 5px; white-space: nowrap; }
+  .job-name { flex: 1; font-size: 13px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .job-card-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .chevron { font-size: 12px; color: var(--text3); transition: transform 0.2s; }
+  .job-card.open .chevron { transform: rotate(180deg); }
+  .job-card-body { display: none; padding: 0 16px 16px; border-top: 1px solid var(--border); }
+  .job-card.open .job-card-body { display: block; }
+
+  /* AI TOOLBAR */
+  .ai-toolbar { display: flex; align-items: center; gap: 8px; margin-top: 14px; margin-bottom: 4px; flex-wrap: wrap; }
+  .ai-status { font-size: 11px; color: var(--text3); font-family: var(--mono); flex: 1; }
+  .ai-status.error { color: var(--red); }
+  .ai-status.success { color: var(--green); }
+
+  /* DAYS */
+  .days-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
+  @media (max-width: 600px) { .days-grid { grid-template-columns: 1fr 1fr; } }
+  .day-label { font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+  .day-date-sub { font-size: 9px; color: var(--text3); font-weight: 400; }
+  .day-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; color: var(--text); font-family: var(--sans); font-size: 12px; padding: 8px 10px; resize: vertical; min-height: 70px; transition: border-color 0.15s; line-height: 1.5; }
+  .day-input:focus { outline: none; border-color: var(--accent); background: #1e2235; }
+  .day-input::placeholder { color: var(--text3); font-size: 11px; }
+  .day-input.has-value { border-color: rgba(79,142,247,0.35); }
+
+  /* SUMMARY */
+  .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+  .summary-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
+  .summary-output { font-family: var(--mono); font-size: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; color: var(--text); white-space: pre-wrap; line-height: 1.7; word-break: break-word; }
+  .summary-output .day-tag { color: var(--amber); font-weight: 600; }
+
+  /* MODALS */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; width: 100%; max-width: 420px; }
+  .modal-title { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 18px; }
+  .form-group { margin-bottom: 14px; }
+  .form-label { display: block; font-size: 11px; font-weight: 500; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .form-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; color: var(--text); font-family: var(--mono); font-size: 13px; padding: 9px 12px; transition: border-color 0.15s; }
+  .form-input:focus { outline: none; border-color: var(--accent); }
+  .form-input::placeholder { color: var(--text3); }
+  .form-hint { font-size: 11px; color: var(--text3); margin-top: 5px; line-height: 1.5; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
+
+  /* FOOTER */
+  .footer-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); padding: 10px 16px; display: flex; gap: 8px; justify-content: flex-end; z-index: 99; flex-wrap: wrap; }
+
+  /* MISC */
+  .empty-state { text-align: center; padding: 48px 24px; color: var(--text3); font-size: 13px; }
+  .empty-state .icon { font-size: 32px; margin-bottom: 10px; }
+  .today-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; display: inline-block; }
+  .api-warning { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--amber); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .api-warning button { margin-left: auto; background: none; border: 1px solid rgba(245,158,11,0.4); color: var(--amber); border-radius: 5px; padding: 3px 10px; font-size: 11px; cursor: pointer; white-space: nowrap; }
+  .api-warning button:hover { background: rgba(245,158,11,0.12); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { display: inline-block; width: 11px; height: 11px; border: 2px solid rgba(167,139,250,0.3); border-top-color: var(--purple); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">⏱ Timesheet</div>
+  <div class="week-nav">
+    <button class="btn-icon" onclick="changeWeek(-1)">‹</button>
+    <div class="week-label" id="weekLabel"></div>
+    <button class="btn-icon" onclick="changeWeek(1)">›</button>
+  </div>
+  <button class="settings-btn" onclick="openSettings()" title="Settings">⚙</button>
+</div>
+
+<div class="main">
+  <div class="tab-bar">
+    <button class="tab active" onclick="switchTab('entry',this)">Entry</button>
+    <button class="tab" onclick="switchTab('summary',this)">Summary</button>
+  </div>
+
+  <!-- ENTRY -->
+  <div class="tab-panel active" id="tab-entry">
+    <div id="apiWarning"></div>
+    <div class="job-header">
+      <span class="section-label">Job Codes</span>
+      <button class="btn btn-primary" onclick="openAddModal()">+ Add Job Code</button>
+    </div>
+    <div id="jobList"><div class="empty-state"><div class="icon">📋</div>No job codes yet. Add one to get started.</div></div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="tab-panel" id="tab-summary">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <span class="section-label">Week Summary</span>
+      <button class="btn btn-email" onclick="emailSummary()">✉ Email Summary</button>
+    </div>
+    <div id="summaryList"><div class="empty-state"><div class="icon">📊</div>Add job codes and entries to see your summary.</div></div>
+  </div>
+</div>
+
+<div class="footer-bar">
+  <button class="btn btn-secondary" onclick="clearWeek()">Clear Week</button>
+  <button class="btn btn-email" onclick="emailSummary()">✉ Email</button>
+  <button class="btn btn-green" onclick="exportExcel()">⬇ Excel</button>
+</div>
+
+<!-- ADD/EDIT JOB MODAL -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Add Job Code</div>
+    <div class="form-group">
+      <label class="form-label">Job Code</label>
+      <input class="form-input" id="inputCode" placeholder="e.g. JOB-001" maxlength="30">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description (optional)</label>
+      <input class="form-input" id="inputName" placeholder="e.g. Oracle Maintenance">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('addModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveJobCode()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-title">⚙ Settings</div>
+    <div class="form-group">
+      <label class="form-label">Anthropic API Key</label>
+      <input class="form-input" id="inputApiKey" type="password" placeholder="sk-ant-…">
+      <div class="form-hint">Stored only on this device. Never sent anywhere except api.anthropic.com. Get a key at console.anthropic.com</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Your Email Address</label>
+      <input class="form-input" id="inputEmail" type="email" placeholder="you@example.com">
+      <div class="form-hint">Pre-fills the To: field when you email your weekly summary.</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Your Role (optional)</label>
+      <input class="form-input" id="inputRole" placeholder="e.g. Oracle DBA – Infrastructure">
+      <div class="form-hint">Helps AI write comments in the right professional context.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('settingsModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'timesheet_v3';
+let state = loadState();
+let currentWeekStart = getWeekStart(new Date());
+let editingJobId = null;
+const DAYS = ['Mon','Tue','Wed','Thu','Fri'];
+
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { jobs:[], entries:{}, settings:{} }; }
+  catch { return { jobs:[], entries:{}, settings:{} }; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+function getWeekStart(d) {
+  const date = new Date(d), day = date.getDay();
+  date.setDate(date.getDate() + (day===0 ? -6 : 1-day));
+  date.setHours(0,0,0,0); return date;
+}
+function getWeekDates(ws) {
+  return DAYS.map((_,i) => { const d=new Date(ws); d.setDate(d.getDate()+i); return d; });
+}
+function weekKey(ws) { return ws.toISOString().slice(0,10); }
+function formatDate(d) { return d.toLocaleDateString('en-NZ',{day:'2-digit',month:'short'}); }
+function isToday(d) { const t=new Date(); return d.getDate()===t.getDate()&&d.getMonth()===t.getMonth()&&d.getFullYear()===t.getFullYear(); }
+function changeWeek(dir) { currentWeekStart=new Date(currentWeekStart); currentWeekStart.setDate(currentWeekStart.getDate()+dir*7); render(); }
+
+function entryKey(jobId,ws,i) { return `${jobId}__${weekKey(ws)}__${i}`; }
+function getEntry(jobId,i) { return state.entries[entryKey(jobId,currentWeekStart,i)]||''; }
+function setEntry(jobId,i,val) { state.entries[entryKey(jobId,currentWeekStart,i)]=val; saveState(); }
+
+function render() {
+  renderWeekLabel(); renderApiWarning(); renderJobs();
+  if (document.getElementById('tab-summary').classList.contains('active')) renderSummary();
+}
+
+function renderWeekLabel() {
+  const d=getWeekDates(currentWeekStart);
+  document.getElementById('weekLabel').textContent=`${formatDate(d[0])} – ${formatDate(d[4])}`;
+}
+
+function renderApiWarning() {
+  const el=document.getElementById('apiWarning');
+  el.innerHTML = state.settings.apiKey ? '' :
+    `<div class="api-warning">⚠ No API key — AI expansion unavailable. <button onclick="openSettings()">Configure</button></div>`;
+}
+
+function renderJobs() {
+  const el=document.getElementById('jobList');
+  if (!state.jobs.length) { el.innerHTML=`<div class="empty-state"><div class="icon">📋</div>No job codes yet. Add one to get started.</div>`; return; }
+  const dates=getWeekDates(currentWeekStart);
+  el.innerHTML=state.jobs.map(job=>`
+    <div class="job-card" id="card-${job.id}">
+      <div class="job-card-header" onclick="toggleCard('${job.id}')">
+        <span class="job-code-badge">${esc(job.code)}</span>
+        <span class="job-name">${esc(job.name||'')}</span>
+        <div class="job-card-actions">
+          <button class="btn btn-secondary" style="padding:4px 8px;font-size:11px" onclick="event.stopPropagation();openEditModal('${job.id}')">Edit</button>
+          <button class="btn btn-danger" style="padding:4px 8px;font-size:11px" onclick="event.stopPropagation();deleteJob('${job.id}')">✕</button>
+          <span class="chevron">▼</span>
+        </div>
+      </div>
+      <div class="job-card-body">
+        <div class="ai-toolbar">
+          <button class="btn btn-ai" id="ai-btn-${job.id}" onclick="expandWithAI('${job.id}')" ${!state.settings.apiKey?'disabled title="Set API key in Settings"':''}>
+            ✦ AI Expand Comments
+          </button>
+          <span class="ai-status" id="ai-status-${job.id}"></span>
+        </div>
+        <div class="days-grid">
+          ${DAYS.map((day,i)=>{
+            const val=getEntry(job.id,i), today=isToday(dates[i]);
+            return `<div class="day-entry">
+              <div class="day-label">${today?'<span class="today-dot"></span>':''}${day}<span class="day-date-sub">${formatDate(dates[i])}</span></div>
+              <textarea class="day-input${val?' has-value':''}" id="entry-${job.id}-${i}" placeholder="e.g. Meeting, RITM123" rows="3"
+                onchange="setEntry('${job.id}',${i},this.value);this.classList.toggle('has-value',this.value.trim().length>0)"
+              >${esc(val)}</textarea>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleCard(id) { document.getElementById(`card-${id}`).classList.toggle('open'); }
+
+function renderSummary() {
+  const el=document.getElementById('summaryList');
+  if (!state.jobs.length) { el.innerHTML=`<div class="empty-state"><div class="icon">📊</div>Add job codes and entries to see your summary.</div>`; return; }
+  let html='';
+  state.jobs.forEach(job=>{
+    const lines=[];
+    DAYS.forEach((day,i)=>{ const v=getEntry(job.id,i).trim(); if(v) lines.push(`#${day.toLowerCase()}\n${v}`); });
+    if (!lines.length) return;
+    const text=lines.join('\n\n');
+    html+=`<div class="summary-card">
+      <div class="summary-card-header">
+        <span class="job-code-badge">${esc(job.code)}</span>
+        ${job.name?`<span style="color:var(--text2);font-size:12px">${esc(job.name)}</span>`:''}
+        <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;margin-left:auto" onclick="copyText('summary-${job.id}',this)">Copy</button>
+      </div>
+      <div class="summary-output" id="summary-${job.id}">${fmtSummary(text)}</div>
+    </div>`;
+  });
+  el.innerHTML=html||`<div class="empty-state"><div class="icon">✏️</div>No entries for this week yet.</div>`;
+}
+
+function fmtSummary(t) { return esc(t).replace(/#(mon|tue|wed|thu|fri)/gi,'<span class="day-tag">#$1</span>'); }
+
+function copyText(elId,btn) {
+  navigator.clipboard.writeText(document.getElementById(elId).innerText).then(()=>{
+    const o=btn.textContent; btn.textContent='✓ Copied'; btn.style.color='var(--green)';
+    setTimeout(()=>{ btn.textContent=o; btn.style.color=''; },1500);
+  });
+}
+
+async function expandWithAI(jobId) {
+  const job=state.jobs.find(j=>j.id===jobId);
+  const apiKey=state.settings.apiKey;
+  if (!apiKey) { alert('Set your Anthropic API key in Settings first.'); return; }
+  const entries=DAYS.map((day,i)=>({day,text:getEntry(jobId,i).trim()})).filter(e=>e.text);
+  if (!entries.length) { setAIStatus(jobId,'No entries to expand.','error'); return; }
+
+  const btn=document.getElementById(`ai-btn-${jobId}`);
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Expanding…'; setAIStatus(jobId,'');
+
+  const role=state.settings.role||'IT professional';
+  const prompt=`You are helping a ${role} write professional timesheet comments.
+Job code: ${job.code}${job.name?` (${job.name})`:''}
+
+Expand each day's brief notes into a clear, professional 1-3 sentence timesheet comment. Keep ticket numbers (RITM, CHG, INC, OEM, etc.) and system names exactly as written. Do not invent details. Return ONLY this exact format with no preamble or extra text:
+
+#mon
+[expanded text or leave blank]
+
+#tue
+[expanded text or leave blank]
+
+#wed
+[expanded text or leave blank]
+
+#thu
+[expanded text or leave blank]
+
+#fri
+[expanded text or leave blank]
+
+Daily notes:
+${entries.map(e=>`#${e.day.toLowerCase()}\n${e.text}`).join('\n\n')}`;
+
+  try {
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+    });
+    if (!res.ok) { const e=await res.json().catch(()=>({})); throw new Error(e.error?.message||`HTTP ${res.status}`); }
+    const data=await res.json();
+    const text=data.content?.find(b=>b.type==='text')?.text||'';
+    const dayMap={mon:0,tue:1,wed:2,thu:3,fri:4};
+    const blocks=text.split(/#(mon|tue|wed|thu|fri)/i);
+    for (let i=1;i<blocks.length-1;i+=2) {
+      const dk=blocks[i].toLowerCase(), content=(blocks[i+1]||'').trim(), idx=dayMap[dk];
+      if (idx!==undefined && content) {
+        setEntry(jobId,idx,content);
+        const ta=document.getElementById(`entry-${jobId}-${idx}`);
+        if (ta) { ta.value=content; ta.classList.add('has-value'); }
+      }
+    }
+    setAIStatus(jobId,'✓ Comments expanded','success');
+    setTimeout(()=>setAIStatus(jobId,''),3000);
+  } catch(e) {
+    setAIStatus(jobId,`Error: ${e.message}`,'error');
+  } finally {
+    btn.disabled=false; btn.innerHTML='✦ AI Expand Comments';
+  }
+}
+
+function setAIStatus(jobId,msg,type='') {
+  const el=document.getElementById(`ai-status-${jobId}`);
+  if (el) { el.textContent=msg; el.className='ai-status'+(type?` ${type}`:''); }
+}
+
+function emailSummary() {
+  const dates=getWeekDates(currentWeekStart);
+  const weekStr=`${formatDate(dates[0])} – ${formatDate(dates[4])}`;
+  let body=`Timesheet Summary – Week ${weekStr}\n\n`;
+  let hasContent=false;
+  state.jobs.forEach(job=>{
+    const lines=[];
+    DAYS.forEach((day,i)=>{ const v=getEntry(job.id,i).trim(); if(v) lines.push(`#${day.toLowerCase()}\n${v}`); });
+    if (!lines.length) return;
+    hasContent=true;
+    body+=`──────────────────────────\nJOB CODE: ${job.code}${job.name?` – ${job.name}`:''}\n──────────────────────────\n${lines.join('\n\n')}\n\n`;
+  });
+  if (!hasContent) { alert('No entries to email for this week.'); return; }
+  const mailto=`mailto:${encodeURIComponent(state.settings.email||'')}?subject=${encodeURIComponent('Timesheet – '+weekStr)}&body=${encodeURIComponent(body)}`;
+  window.location.href=mailto;
+}
+
+function exportExcel() {
+  const dates=getWeekDates(currentWeekStart);
+  const rows=[['Date','Job Code','Description','Comment']];
+  state.jobs.forEach(job=>{
+    DAYS.forEach((day,i)=>{
+      const v=getEntry(job.id,i).trim();
+      if (v) rows.push([dates[i].toLocaleDateString('en-NZ',{day:'2-digit',month:'2-digit',year:'numeric'}),job.code,job.name||'',v]);
+    });
+  });
+  if (rows.length===1) { alert('No entries to export.'); return; }
+  const wb=XLSX.utils.book_new(), ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:12},{wch:16},{wch:24},{wch:60}];
+  XLSX.utils.book_append_sheet(wb,ws,'Timesheet');
+  XLSX.writeFile(wb,`timesheet_${weekKey(currentWeekStart)}.xlsx`);
+}
+
+function clearWeek() {
+  if (!confirm('Clear all entries for this week?')) return;
+  const wk=weekKey(currentWeekStart);
+  Object.keys(state.entries).forEach(k=>{ if(k.includes(`__${wk}__`)) delete state.entries[k]; });
+  saveState(); render();
+}
+
+function openAddModal() {
+  editingJobId=null;
+  document.getElementById('modalTitle').textContent='Add Job Code';
+  document.getElementById('inputCode').value='';
+  document.getElementById('inputName').value='';
+  document.getElementById('addModal').classList.add('open');
+  setTimeout(()=>document.getElementById('inputCode').focus(),100);
+}
+function openEditModal(jobId) {
+  editingJobId=jobId;
+  const job=state.jobs.find(j=>j.id===jobId);
+  document.getElementById('modalTitle').textContent='Edit Job Code';
+  document.getElementById('inputCode').value=job.code;
+  document.getElementById('inputName').value=job.name||'';
+  document.getElementById('addModal').classList.add('open');
+}
+function saveJobCode() {
+  const code=document.getElementById('inputCode').value.trim();
+  const name=document.getElementById('inputName').value.trim();
+  if (!code) { document.getElementById('inputCode').focus(); return; }
+  if (editingJobId) { const j=state.jobs.find(j=>j.id===editingJobId); if(j){j.code=code;j.name=name;} }
+  else state.jobs.push({id:uid(),code,name});
+  saveState(); closeModal('addModal'); render();
+}
+function deleteJob(jobId) {
+  if (!confirm('Delete this job code?')) return;
+  state.jobs=state.jobs.filter(j=>j.id!==jobId); saveState(); render();
+}
+
+function openSettings() {
+  document.getElementById('inputApiKey').value=state.settings.apiKey||'';
+  document.getElementById('inputEmail').value=state.settings.email||'';
+  document.getElementById('inputRole').value=state.settings.role||'';
+  document.getElementById('settingsModal').classList.add('open');
+  setTimeout(()=>document.getElementById('inputApiKey').focus(),100);
+}
+function saveSettings() {
+  state.settings.apiKey=document.getElementById('inputApiKey').value.trim();
+  state.settings.email=document.getElementById('inputEmail').value.trim();
+  state.settings.role=document.getElementById('inputRole').value.trim();
+  saveState(); closeModal('settingsModal'); render();
+}
+
+function switchTab(name,btn) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`tab-${name}`).classList.add('active');
+  if (name==='summary') renderSummary();
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function uid() { return Math.random().toString(36).slice(2,9); }
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+document.addEventListener('keydown',e=>{
+  if (e.key==='Escape') { closeModal('addModal'); closeModal('settingsModal'); }
+  if (e.key==='Enter'&&document.getElementById('addModal').classList.contains('open')&&document.activeElement?.tagName!=='TEXTAREA') saveJobCode();
+  if (e.key==='Enter'&&document.getElementById('settingsModal').classList.contains('open')&&document.activeElement?.tagName!=='TEXTAREA') saveSettings();
+});
+
+render();
+</script>
+</body>
+</html>
