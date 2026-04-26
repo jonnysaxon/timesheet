@@ -759,8 +759,7 @@ async function ghPullNow() {
     if(!res.ok){ var e=await res.json().catch(function(){return{};}); throw new Error(e.message||'HTTP '+res.status); }
     var data=await res.json();
     ghLastSha=data.sha;
-    var json=JSON.parse(decodeURIComponent(escape(atob(data.content.replace(/
-/g,'')))));
+    var json=JSON.parse(decodeURIComponent(escape(atob(data.content.split('\n').join('')))));  
     if(!json.jobs) throw new Error('Unrecognised data format');
     // Preserve local token/repo settings, merge rest
     var localSettings={ghToken:state.settings.ghToken,ghRepo:state.settings.ghRepo,appUrl:state.settings.appUrl};
