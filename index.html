@@ -327,6 +327,7 @@ var DAY_LABELS  = ['Sat','Sun','Mon','Tue','Wed','Thu','Fri'];
 var WEEKEND_SET = {sat:true, sun:true};
 
 var appBooting = true; // suppress GitHub push during initial load
+var suppressVisibilityPush = 0; // timestamp until which visibilitychange should not auto-push
 var state = loadState();
 var currentWeekStart = getWeekStart(new Date());
 var editingJobId = null;
@@ -912,6 +913,9 @@ function exportBackup() {
   var url=URL.createObjectURL(blob), a=document.createElement('a');
   var ds=new Date().toLocaleDateString('en-NZ',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'-');
   a.href=url; a.download='timesheet_backup_'+ds+'.json';
+  // Suppress visibilitychange auto-push for 5 seconds — iOS share sheet causes
+  // a hidden visibility event that would otherwise trigger a failing ghPush
+  suppressVisibilityPush = Date.now() + 5000;
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
   // Update live state lastBackup without triggering a markDirty/push
   state.settings.lastBackup=now; state.settings.backupSnooze=null;
@@ -919,7 +923,7 @@ function exportBackup() {
   // Re-populate ALL settings form fields immediately so that if the user
   // clicks Save after exporting, it writes the correct values not stale ones
   if(typeof populateSettingsForm==='function') populateSettingsForm();
-  setBackupStatus('Backup exported — all settings included.','var(--green)');
+  setBackupStatus('Backup exported successfully.','var(--green)');
   updateLastBackupInfo();
   var el=document.getElementById('backupReminder'); if(el) el.innerHTML='';
 }
@@ -1110,7 +1114,7 @@ updateSyncIndicator();
 if(ghConfigured()){ ghPullNow().catch(function(e){ setSyncStatus('err',e.message); }); }
 // Safety net: auto-push if there are unsynced changes when user leaves the app
 document.addEventListener('visibilitychange', function() {
-  if(document.visibilityState==='hidden' && ghDirty && ghConfigured()) {
+  if(document.visibilityState==='hidden' && ghDirty && ghConfigured() && Date.now() > suppressVisibilityPush) {
     ghPush().catch(function(){});
   }
 });
