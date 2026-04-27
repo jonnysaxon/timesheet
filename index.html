@@ -240,6 +240,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
       <div id="apiKeyDisplay" style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-family:var(--mono);font-size:13px;color:var(--text2);display:flex;align-items:center;justify-content:space-between;gap:8px">
         <span id="apiKeyMask" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
         <button type="button" onclick="editSensitive('apiKey')" style="background:none;border:1px solid var(--border);color:var(--text3);border-radius:5px;padding:2px 10px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0">Change</button>
+        <button type="button" onclick="clearSensitive('apiKey')" style="background:none;border:1px solid rgba(239,68,68,.3);color:var(--red);border-radius:5px;padding:2px 8px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0">&#10005;</button>
       </div>
       <input class="form-input" id="inputApiKey" type="text" placeholder="Paste new API key here" autocomplete="off" style="display:none;margin-top:6px">
       <div class="form-hint">Stored only on this device. Never sent anywhere except api.anthropic.com.</div>
@@ -279,6 +280,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
         <div id="ghTokenDisplay" style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-family:var(--mono);font-size:13px;color:var(--text2);display:flex;align-items:center;justify-content:space-between;gap:8px">
           <span id="ghTokenMask" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
           <button type="button" onclick="editSensitive('ghToken')" style="background:none;border:1px solid var(--border);color:var(--text3);border-radius:5px;padding:2px 10px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0">Change</button>
+          <button type="button" onclick="clearSensitive('ghToken')" style="background:none;border:1px solid rgba(239,68,68,.3);color:var(--red);border-radius:5px;padding:2px 8px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0">&#10005;</button>
         </div>
         <input class="form-input" id="inputGhToken" type="text" placeholder="Paste new token here" autocomplete="off" style="display:none;margin-top:6px">
         <div class="form-hint">Create at github.com &rarr; Settings &rarr; Developer settings &rarr; Fine-grained tokens. Scope: Contents read+write on your private repo only.</div>
@@ -867,8 +869,12 @@ async function ghPushNow() {
 
 async function ghTestConnection() {
   setGhStatus('Testing...');
-  var token=document.getElementById('inputGhToken').value.trim();
-  var repo=document.getElementById('inputGhRepo').value.trim();
+  // Use change-input value if user is editing, else use saved state
+  var gtIn = document.getElementById('inputGhToken');
+  var token = (gtIn.style.display !== 'none' && gtIn.value.trim() !== '')
+    ? gtIn.value.trim()
+    : (state.settings.ghToken || '');
+  var repo = document.getElementById('inputGhRepo').value.trim() || state.settings.ghRepo || '';
   if(!token||!repo){ setGhStatus('Enter token and repo first.'); return; }
   try {
     var res=await fetch('https://api.github.com/repos/'+repo,{
@@ -975,7 +981,7 @@ function saveJobCode() {
   saveState(); closeModal('addModal'); render();
 }
 function maskValue(val, prefixLen) {
-  if (!val) return 'Not set';
+  if (!val) return '(not saved)';
   prefixLen = prefixLen || 8;
   return val.slice(0, prefixLen) + '••••••••••••••••';
 }
@@ -983,8 +989,12 @@ function populateSettingsForm() {
   // Sensitive fields: show masked display, hide change input
   var apiKey = state.settings.apiKey || '';
   var ghToken = state.settings.ghToken || '';
-  document.getElementById('apiKeyMask').textContent  = maskValue(apiKey, 10);
-  document.getElementById('ghTokenMask').textContent = maskValue(ghToken, 12);
+  var akMask = document.getElementById('apiKeyMask');
+  var gtMask = document.getElementById('ghTokenMask');
+  akMask.textContent = maskValue(apiKey, 10);
+  akMask.style.color = apiKey ? 'var(--green)' : 'var(--amber)';
+  gtMask.textContent = maskValue(ghToken, 12);
+  gtMask.style.color = ghToken ? 'var(--green)' : 'var(--amber)';
   // Reset change inputs - hidden and empty
   var akIn = document.getElementById('inputApiKey');
   akIn.value = ''; akIn.style.display = 'none';
@@ -995,6 +1005,12 @@ function populateSettingsForm() {
   document.getElementById('inputRole').value    = state.settings.role||'';
   document.getElementById('inputAppUrl').value  = state.settings.appUrl||'';
   document.getElementById('inputGhRepo').value  = state.settings.ghRepo||'';
+}
+function clearSensitive(field) {
+  if (!confirm('Clear the saved ' + (field === 'apiKey' ? 'API key' : 'GitHub token') + '?')) return;
+  state.settings[field] = '';
+  saveState();
+  populateSettingsForm();
 }
 function editSensitive(field) {
   var inputId = field === 'apiKey' ? 'inputApiKey' : 'inputGhToken';
@@ -1012,7 +1028,7 @@ function openSettings() {
   document.getElementById('backupStatus').textContent='';
   updateLastBackupInfo();
   document.getElementById('settingsModal').classList.add('open');
-  setTimeout(function(){document.getElementById('inputApiKey').focus();},100);
+  // Don't auto-focus on settings open
 }
 function saveSettings() {
   // Only overwrite a setting if the field has a value, OR the user explicitly cleared it
