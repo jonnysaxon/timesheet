@@ -237,7 +237,11 @@ body.light .job-card:hover{border-color:#b0b8d8;}
     </div>
     <div class="form-group">
       <label class="form-label">Anthropic API Key</label>
-      <input class="form-input" id="inputApiKey" type="password" placeholder="sk-ant-..." autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly')">
+      <div id="apiKeyDisplay" style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-family:var(--mono);font-size:13px;color:var(--text2);display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <span id="apiKeyMask" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+        <button type="button" onclick="editSensitive('apiKey')" style="background:none;border:1px solid var(--border);color:var(--text3);border-radius:5px;padding:2px 10px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0">Change</button>
+      </div>
+      <input class="form-input" id="inputApiKey" type="text" placeholder="Paste new API key here" autocomplete="off" style="display:none;margin-top:6px">
       <div class="form-hint">Stored only on this device. Never sent anywhere except api.anthropic.com.</div>
     </div>
     <div class="form-group">
@@ -272,7 +276,11 @@ body.light .job-card:hover{border-color:#b0b8d8;}
       <div class="form-hint" style="margin-bottom:8px">Stores your data in a private GitHub repo as <code>timesheet-data.json</code>. Syncs automatically on every save. Works across any device that has this app open.</div>
       <div class="form-group" style="margin-bottom:8px">
         <label class="form-label" style="margin-bottom:4px">Personal Access Token</label>
-        <input class="form-input" id="inputGhToken" type="password" placeholder="github_pat_..." autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly')">
+        <div id="ghTokenDisplay" style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-family:var(--mono);font-size:13px;color:var(--text2);display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <span id="ghTokenMask" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+          <button type="button" onclick="editSensitive('ghToken')" style="background:none;border:1px solid var(--border);color:var(--text3);border-radius:5px;padding:2px 10px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0">Change</button>
+        </div>
+        <input class="form-input" id="inputGhToken" type="text" placeholder="Paste new token here" autocomplete="off" style="display:none;margin-top:6px">
         <div class="form-hint">Create at github.com &rarr; Settings &rarr; Developer settings &rarr; Fine-grained tokens. Scope: Contents read+write on your private repo only.</div>
       </div>
       <div class="form-group" style="margin-bottom:8px">
@@ -966,13 +974,37 @@ function saveJobCode() {
   else state.jobs.push({id:uid(),code:code,name:name});
   saveState(); closeModal('addModal'); render();
 }
+function maskValue(val, prefixLen) {
+  if (!val) return 'Not set';
+  prefixLen = prefixLen || 8;
+  return val.slice(0, prefixLen) + '••••••••••••••••';
+}
 function populateSettingsForm() {
-  document.getElementById('inputApiKey').value  = state.settings.apiKey||'';
+  // Sensitive fields: show masked display, hide change input
+  var apiKey = state.settings.apiKey || '';
+  var ghToken = state.settings.ghToken || '';
+  document.getElementById('apiKeyMask').textContent  = maskValue(apiKey, 10);
+  document.getElementById('ghTokenMask').textContent = maskValue(ghToken, 12);
+  // Reset change inputs - hidden and empty
+  var akIn = document.getElementById('inputApiKey');
+  akIn.value = ''; akIn.style.display = 'none';
+  var gtIn = document.getElementById('inputGhToken');
+  gtIn.value = ''; gtIn.style.display = 'none';
+  // Normal fields
   document.getElementById('inputEmail').value   = state.settings.email||'';
   document.getElementById('inputRole').value    = state.settings.role||'';
   document.getElementById('inputAppUrl').value  = state.settings.appUrl||'';
-  document.getElementById('inputGhToken').value = state.settings.ghToken||'';
   document.getElementById('inputGhRepo').value  = state.settings.ghRepo||'';
+}
+function editSensitive(field) {
+  var inputId = field === 'apiKey' ? 'inputApiKey' : 'inputGhToken';
+  var displayId = field === 'apiKey' ? 'apiKeyDisplay' : 'ghTokenDisplay';
+  var inp = document.getElementById(inputId);
+  inp.style.display = 'block';
+  inp.value = '';
+  inp.focus();
+  // Hide the display row
+  document.getElementById(displayId).style.display = 'none';
 }
 function openSettings() {
   populateSettingsForm();
@@ -985,20 +1017,18 @@ function openSettings() {
 function saveSettings() {
   // Only overwrite a setting if the field has a value, OR the user explicitly cleared it
   // (detected by checking if the field was populated when modal opened vs now)
-  // For sensitive fields: only save if field has a real value (not empty, not placeholder)
-  // If field is blank or shows placeholder, keep the existing stored value
-  function sensitiveVal(id, existing) {
-    var el = document.getElementById(id);
-    var v = el.value.trim();
-    var placeholder = el.getAttribute('placeholder') || '';
-    if (v === '' || v === placeholder) return existing;
-    return v;
+  // Sensitive fields: only update if the change input is visible AND has a value
+  var akIn = document.getElementById('inputApiKey');
+  var gtIn = document.getElementById('inputGhToken');
+  if (akIn.style.display !== 'none' && akIn.value.trim() !== '') {
+    state.settings.apiKey = akIn.value.trim();
   }
-  state.settings.apiKey  = sensitiveVal('inputApiKey', state.settings.apiKey);
+  if (gtIn.style.display !== 'none' && gtIn.value.trim() !== '') {
+    state.settings.ghToken = gtIn.value.trim();
+  }
   state.settings.email   = document.getElementById('inputEmail').value.trim();
   state.settings.role    = document.getElementById('inputRole').value.trim();
   state.settings.appUrl  = document.getElementById('inputAppUrl').value.trim();
-  state.settings.ghToken = sensitiveVal('inputGhToken', state.settings.ghToken);
   state.settings.ghRepo  = document.getElementById('inputGhRepo').value.trim();
   saveState(); closeModal('settingsModal'); render(); updateSyncIndicator();
 }
