@@ -863,14 +863,23 @@ function setGhStatus(msg) {
 
 /* ─── BACKUP ─── */
 function exportBackup() {
-  var backup={exportedAt:new Date().toISOString(),version:STORAGE_KEY,data:state};
+  // Deep-clone state so the backup is fully independent and includes
+  // ALL settings (apiKey, ghToken etc). Token stripping only happens
+  // in ghPush for the GitHub copy — never for local backups.
+  var now=new Date().toISOString();
+  var snapshot=JSON.parse(JSON.stringify(state));
+  snapshot.settings.lastBackup=now;
+  snapshot.settings.backupSnooze=null;
+  var backup={exportedAt:now,version:STORAGE_KEY,data:snapshot};
   var blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
   var url=URL.createObjectURL(blob), a=document.createElement('a');
   var ds=new Date().toLocaleDateString('en-NZ',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'-');
   a.href=url; a.download='timesheet_backup_'+ds+'.json';
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-  state.settings.lastBackup=new Date().toISOString(); state.settings.backupSnooze=null;
-  saveState(); setBackupStatus('Backup exported successfully','var(--green)');
+  // Update live state lastBackup without triggering a markDirty/push
+  state.settings.lastBackup=now; state.settings.backupSnooze=null;
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(state)); // write directly, skip schedulePush
+  setBackupStatus('Backup exported — all settings included.','var(--green)');
   updateLastBackupInfo();
   var el=document.getElementById('backupReminder'); if(el) el.innerHTML='';
 }
