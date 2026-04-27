@@ -237,7 +237,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
     </div>
     <div class="form-group">
       <label class="form-label">Anthropic API Key</label>
-      <input class="form-input" id="inputApiKey" type="text" placeholder="sk-ant-..." autocomplete="off" style="-webkit-text-security:disc">
+      <input class="form-input" id="inputApiKey" type="password" placeholder="sk-ant-..." autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly')">
       <div class="form-hint">Stored only on this device. Never sent anywhere except api.anthropic.com.</div>
     </div>
     <div class="form-group">
@@ -272,7 +272,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
       <div class="form-hint" style="margin-bottom:8px">Stores your data in a private GitHub repo as <code>timesheet-data.json</code>. Syncs automatically on every save. Works across any device that has this app open.</div>
       <div class="form-group" style="margin-bottom:8px">
         <label class="form-label" style="margin-bottom:4px">Personal Access Token</label>
-        <input class="form-input" id="inputGhToken" type="text" placeholder="github_pat_..." autocomplete="off" style="-webkit-text-security:disc">
+        <input class="form-input" id="inputGhToken" type="password" placeholder="github_pat_..." autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly')">
         <div class="form-hint">Create at github.com &rarr; Settings &rarr; Developer settings &rarr; Fine-grained tokens. Scope: Contents read+write on your private repo only.</div>
       </div>
       <div class="form-group" style="margin-bottom:8px">
@@ -985,17 +985,20 @@ function openSettings() {
 function saveSettings() {
   // Only overwrite a setting if the field has a value, OR the user explicitly cleared it
   // (detected by checking if the field was populated when modal opened vs now)
-  function fieldVal(id, existing) {
-    var v = document.getElementById(id).value.trim();
-    // If field is empty but we had a value, keep the existing value
-    // (handles Safari autoclear of sensitive fields)
-    return v !== '' ? v : existing;
+  // For sensitive fields: only save if field has a real value (not empty, not placeholder)
+  // If field is blank or shows placeholder, keep the existing stored value
+  function sensitiveVal(id, existing) {
+    var el = document.getElementById(id);
+    var v = el.value.trim();
+    var placeholder = el.getAttribute('placeholder') || '';
+    if (v === '' || v === placeholder) return existing;
+    return v;
   }
-  state.settings.apiKey  = fieldVal('inputApiKey', state.settings.apiKey);
+  state.settings.apiKey  = sensitiveVal('inputApiKey', state.settings.apiKey);
   state.settings.email   = document.getElementById('inputEmail').value.trim();
   state.settings.role    = document.getElementById('inputRole').value.trim();
   state.settings.appUrl  = document.getElementById('inputAppUrl').value.trim();
-  state.settings.ghToken = fieldVal('inputGhToken', state.settings.ghToken);
+  state.settings.ghToken = sensitiveVal('inputGhToken', state.settings.ghToken);
   state.settings.ghRepo  = document.getElementById('inputGhRepo').value.trim();
   saveState(); closeModal('settingsModal'); render(); updateSyncIndicator();
 }
