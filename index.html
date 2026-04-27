@@ -338,7 +338,11 @@ function migrateV4(old) {
   return s;
 }
 
-function saveState() { localStorage.setItem(STORAGE_KEY,JSON.stringify(state)); if(typeof schedulePush==='function'&&!appBooting) schedulePush(); }
+function saveState() {
+  console.log('[saveState] apiKey='+!!state.settings.apiKey+' ghToken='+!!state.settings.ghToken+' caller='+(new Error().stack.split('\n')[1]||'').trim());
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+  if(typeof schedulePush==='function'&&!appBooting) schedulePush();
+}
 
 /* ─── WEEK ─── */
 function getWeekStart(d) {
@@ -805,18 +809,19 @@ async function ghPullNow() {
     ghLastSha=data.sha;
     var json=JSON.parse(decodeURIComponent(escape(atob(data.content.split('\n').join('')))));
     if(!json.jobs) throw new Error('Unrecognised data format');
-    // Merge settings: local wins for any key that exists locally and is non-empty.
-    // GitHub wins for any key that is missing or empty locally.
-    // This means first-time setup on a new device gets all settings from GitHub,
-    // but an existing device never loses its credentials to a stale GitHub copy.
-    var localSettings = state.settings || {};
-    var ghSettings    = json.settings  || {};
+    // Read settings directly from localStorage — source of truth for credentials.
+    // Never trust in-memory state.settings as it may have been overwritten by a previous pull.
+    var stored = {};
+    try { stored = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e){}
+    var storedSettings = stored.settings || {};
+
+    var ghSettings = json.settings || {};
     var merged = {};
-    // Start with GitHub settings as base
+    // GitHub settings as base (for new-device first-pull)
     Object.keys(ghSettings).forEach(function(k){ merged[k] = ghSettings[k]; });
-    // Local non-empty values always win
-    Object.keys(localSettings).forEach(function(k){
-      var v = localSettings[k];
+    // Stored local non-empty values always win
+    Object.keys(storedSettings).forEach(function(k){
+      var v = storedSettings[k];
       if(v !== undefined && v !== null && v !== '') merged[k] = v;
     });
     state = ensureFields(json);
@@ -877,6 +882,7 @@ function exportBackup() {
   // ALL settings (apiKey, ghToken etc). Token stripping only happens
   // in ghPush for the GitHub copy — never for local backups.
   var now=new Date().toISOString();
+  console.log('[exportBackup] state.settings.apiKey='+!!state.settings.apiKey+' ghToken='+!!state.settings.ghToken);
   var snapshot=JSON.parse(JSON.stringify(state));
   snapshot.settings.lastBackup=now;
   snapshot.settings.backupSnooze=null;
@@ -970,6 +976,8 @@ function openSettings() {
   setTimeout(function(){document.getElementById('inputApiKey').focus();},100);
 }
 function saveSettings() {
+  console.log('[saveSettings] inputApiKey field value length='+document.getElementById('inputApiKey').value.length+' inputGhToken field value length='+document.getElementById('inputGhToken').value.length);
+  console.log('[saveSettings] state.settings.apiKey before='+!!state.settings.apiKey+' ghToken before='+!!state.settings.ghToken);
   // Only overwrite a setting if the field has a value, OR the user explicitly cleared it
   // (detected by checking if the field was populated when modal opened vs now)
   function fieldVal(id, existing) {
