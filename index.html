@@ -226,6 +226,15 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 <div class="modal-overlay" id="settingsModal">
   <div class="modal" style="max-width:480px">
     <div class="modal-title">&#9881; Settings</div>
+    <div id="debugPanel" style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;margin-bottom:14px;font-family:var(--mono);font-size:11px;color:var(--text2);display:none">
+      <div style="font-weight:600;margin-bottom:6px;color:var(--text3)">DEBUG — current state</div>
+      <div id="debugContent"></div>
+      <button onclick="refreshDebug()" style="margin-top:8px;background:none;border:1px solid var(--border);color:var(--text3);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">Refresh</button>
+      <button onclick="document.getElementById('debugPanel').style.display='none'" style="margin-top:8px;margin-left:4px;background:none;border:1px solid var(--border);color:var(--text3);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">Hide</button>
+    </div>
+    <div style="margin-bottom:10px">
+      <button onclick="toggleDebug()" style="background:none;border:1px solid var(--border);color:var(--text3);border-radius:4px;padding:3px 10px;font-size:10px;cursor:pointer;font-family:var(--mono)">Show Debug Info</button>
+    </div>
     <div class="form-group">
       <label class="form-label">Anthropic API Key</label>
       <input class="form-input" id="inputApiKey" type="text" placeholder="sk-ant-..." autocomplete="off" style="-webkit-text-security:disc">
@@ -339,7 +348,6 @@ function migrateV4(old) {
 }
 
 function saveState() {
-  console.log('[saveState] apiKey='+!!state.settings.apiKey+' ghToken='+!!state.settings.ghToken+' caller='+(new Error().stack.split('\n')[1]||'').trim());
   localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
   if(typeof schedulePush==='function'&&!appBooting) schedulePush();
 }
@@ -882,7 +890,6 @@ function exportBackup() {
   // ALL settings (apiKey, ghToken etc). Token stripping only happens
   // in ghPush for the GitHub copy — never for local backups.
   var now=new Date().toISOString();
-  console.log('[exportBackup] state.settings.apiKey='+!!state.settings.apiKey+' ghToken='+!!state.settings.ghToken);
   var snapshot=JSON.parse(JSON.stringify(state));
   snapshot.settings.lastBackup=now;
   snapshot.settings.backupSnooze=null;
@@ -976,8 +983,6 @@ function openSettings() {
   setTimeout(function(){document.getElementById('inputApiKey').focus();},100);
 }
 function saveSettings() {
-  console.log('[saveSettings] inputApiKey field value length='+document.getElementById('inputApiKey').value.length+' inputGhToken field value length='+document.getElementById('inputGhToken').value.length);
-  console.log('[saveSettings] state.settings.apiKey before='+!!state.settings.apiKey+' ghToken before='+!!state.settings.ghToken);
   // Only overwrite a setting if the field has a value, OR the user explicitly cleared it
   // (detected by checking if the field was populated when modal opened vs now)
   function fieldVal(id, existing) {
@@ -1016,6 +1021,38 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Enter'&&document.getElementById('addModal').classList.contains('open')&&document.activeElement&&document.activeElement.tagName!=='TEXTAREA') saveJobCode();
   if(e.key==='Enter'&&document.getElementById('settingsModal').classList.contains('open')&&document.activeElement&&document.activeElement.tagName!=='TEXTAREA'&&document.activeElement.tagName!=='BUTTON') saveSettings();
 });
+
+function refreshDebug() {
+  var el = document.getElementById('debugContent');
+  if (!el) return;
+  // Read directly from localStorage - source of truth
+  var stored = {};
+  try { stored = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e){}
+  var ss = stored.settings || {};
+  var ms = state.settings || {};
+  var rows = [
+    ['localStorage apiKey', ss.apiKey ? ss.apiKey.slice(0,12)+'...' : 'EMPTY'],
+    ['localStorage ghToken', ss.ghToken ? ss.ghToken.slice(0,12)+'...' : 'EMPTY'],
+    ['localStorage ghRepo', ss.ghRepo || 'EMPTY'],
+    ['localStorage email', ss.email || 'EMPTY'],
+    ['state.settings apiKey', ms.apiKey ? ms.apiKey.slice(0,12)+'...' : 'EMPTY'],
+    ['state.settings ghToken', ms.ghToken ? ms.ghToken.slice(0,12)+'...' : 'EMPTY'],
+  ];
+  el.innerHTML = rows.map(function(r){
+    var ok = r[1] !== 'EMPTY';
+    return '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
+      +'<span style="color:var(--text3)">'+r[0]+'</span>'
+      +'<span style="color:'+(ok?'var(--green)':'var(--red)')+'">'+r[1]+'</span>'
+      +'</div>';
+  }).join('');
+}
+function toggleDebug() {
+  var p = document.getElementById('debugPanel');
+  if (!p) return;
+  var showing = p.style.display !== 'none';
+  p.style.display = showing ? 'none' : 'block';
+  if (!showing) refreshDebug();
+}
 
 render();
 appBooting = false; // allow GitHub pushes from now on
