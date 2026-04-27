@@ -761,14 +761,7 @@ async function ghPush() {
     // was created manually in GitHub or pushed from another device
     await ghFetchSha();
     var payload=JSON.parse(JSON.stringify(state));
-    // Strip all sensitive/device-local settings from the GitHub copy
-    delete payload.settings.ghToken;
-    delete payload.settings.apiKey;
-    delete payload.settings.email;
-    delete payload.settings.role;
-    delete payload.settings.appUrl;
-    delete payload.settings.lightMode;
-    delete payload.settings.backupSnooze;
+    // Repo is private — store everything so pull always restores full state
     var content=btoa(unescape(encodeURIComponent(JSON.stringify(payload,null,2))));
     var body={message:'timesheet update '+new Date().toISOString(), content:content};
     if(ghLastSha) body.sha=ghLastSha;
@@ -812,25 +805,11 @@ async function ghPullNow() {
     ghLastSha=data.sha;
     var json=JSON.parse(decodeURIComponent(escape(atob(data.content.split('\n').join('')))));
     if(!json.jobs) throw new Error('Unrecognised data format');
-    // Preserve ALL local-only settings — these are never stored in GitHub
-    var localSettings={
-      ghToken: state.settings.ghToken,
-      ghRepo:  state.settings.ghRepo,
-      apiKey:  state.settings.apiKey,
-      email:   state.settings.email,
-      role:    state.settings.role,
-      appUrl:  state.settings.appUrl,
-      lightMode: state.settings.lightMode,
-      lastBackup: state.settings.lastBackup,
-      backupSnooze: state.settings.backupSnooze
-    };
+    // Restore full state from GitHub — repo is private so all settings are stored
+    // Only preserve the ghToken locally since it's the credential used to access GitHub
+    var savedToken=state.settings.ghToken;
     state=ensureFields(json);
-    // Restore everything that should never be overwritten by a pull
-    Object.keys(localSettings).forEach(function(k){
-      if(localSettings[k]!==undefined && localSettings[k]!==null && localSettings[k]!=='') {
-        state.settings[k]=localSettings[k];
-      }
-    });
+    if(savedToken) state.settings.ghToken=savedToken;
     saveState(); render();
     setGhStatus('Pulled successfully at '+new Date().toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'}));
     setSyncStatus('ok','GitHub sync on');
@@ -899,6 +878,9 @@ function exportBackup() {
   // Update live state lastBackup without triggering a markDirty/push
   state.settings.lastBackup=now; state.settings.backupSnooze=null;
   localStorage.setItem(STORAGE_KEY,JSON.stringify(state)); // write directly, skip schedulePush
+  // Re-populate ALL settings form fields immediately so that if the user
+  // clicks Save after exporting, it writes the correct values not stale ones
+  if(typeof populateSettingsForm==='function') populateSettingsForm();
   setBackupStatus('Backup exported — all settings included.','var(--green)');
   updateLastBackupInfo();
   var el=document.getElementById('backupReminder'); if(el) el.innerHTML='';
@@ -917,13 +899,7 @@ function importBackup(input) {
       // If backup had no ghToken/ghRepo, preserve any currently configured ones
       // (token is never stored in GitHub pulls, but IS stored in local JSON backups)
       saveState(); render();
-      // Re-populate settings fields if modal happens to be open
-      if(document.getElementById('inputApiKey')) document.getElementById('inputApiKey').value=state.settings.apiKey||'';
-      if(document.getElementById('inputEmail'))  document.getElementById('inputEmail').value=state.settings.email||'';
-      if(document.getElementById('inputRole'))   document.getElementById('inputRole').value=state.settings.role||'';
-      if(document.getElementById('inputAppUrl')) document.getElementById('inputAppUrl').value=state.settings.appUrl||'';
-      if(document.getElementById('inputGhToken'))document.getElementById('inputGhToken').value=state.settings.ghToken||'';
-      if(document.getElementById('inputGhRepo')) document.getElementById('inputGhRepo').value=state.settings.ghRepo||'';
+      if(typeof populateSettingsForm==='function') populateSettingsForm();
       setBackupStatus('Backup restored — including API key, email and all settings.','var(--green)');
       updateLastBackupInfo(); updateSyncIndicator();
     } catch(err){ setBackupStatus('Import failed: '+err.message,'var(--red)'); }
@@ -966,13 +942,16 @@ function saveJobCode() {
   else state.jobs.push({id:uid(),code:code,name:name});
   saveState(); closeModal('addModal'); render();
 }
+function populateSettingsForm() {
+  document.getElementById('inputApiKey').value  = state.settings.apiKey||'';
+  document.getElementById('inputEmail').value   = state.settings.email||'';
+  document.getElementById('inputRole').value    = state.settings.role||'';
+  document.getElementById('inputAppUrl').value  = state.settings.appUrl||'';
+  document.getElementById('inputGhToken').value = state.settings.ghToken||'';
+  document.getElementById('inputGhRepo').value  = state.settings.ghRepo||'';
+}
 function openSettings() {
-  document.getElementById('inputApiKey').value=state.settings.apiKey||'';
-  document.getElementById('inputEmail').value=state.settings.email||'';
-  document.getElementById('inputRole').value=state.settings.role||'';
-  document.getElementById('inputAppUrl').value=state.settings.appUrl||'';
-  document.getElementById('inputGhToken').value=state.settings.ghToken||'';
-  document.getElementById('inputGhRepo').value=state.settings.ghRepo||'';
+  populateSettingsForm();
   document.getElementById('ghStatus').textContent='';
   document.getElementById('backupStatus').textContent='';
   updateLastBackupInfo();
@@ -980,12 +959,14 @@ function openSettings() {
   setTimeout(function(){document.getElementById('inputApiKey').focus();},100);
 }
 function saveSettings() {
-  state.settings.apiKey=document.getElementById('inputApiKey').value.trim();
-  state.settings.email=document.getElementById('inputEmail').value.trim();
-  state.settings.role=document.getElementById('inputRole').value.trim();
-  state.settings.appUrl=document.getElementById('inputAppUrl').value.trim();
-  state.settings.ghToken=document.getElementById('inputGhToken').value.trim();
-  state.settings.ghRepo=document.getElementById('inputGhRepo').value.trim();
+  // Always write all fields — but openSettings() must have populated them
+  // correctly first, so what the user sees is what gets saved
+  state.settings.apiKey  = document.getElementById('inputApiKey').value.trim();
+  state.settings.email   = document.getElementById('inputEmail').value.trim();
+  state.settings.role    = document.getElementById('inputRole').value.trim();
+  state.settings.appUrl  = document.getElementById('inputAppUrl').value.trim();
+  state.settings.ghToken = document.getElementById('inputGhToken').value.trim();
+  state.settings.ghRepo  = document.getElementById('inputGhRepo').value.trim();
   saveState(); closeModal('settingsModal'); render(); updateSyncIndicator();
 }
 function checkForUpdate() {
@@ -1008,7 +989,7 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape'){closeModal('addModal');closeModal('settingsModal');}
   if(e.key==='Enter'&&document.getElementById('addModal').classList.contains('open')&&document.activeElement&&document.activeElement.tagName!=='TEXTAREA') saveJobCode();
-  if(e.key==='Enter'&&document.getElementById('settingsModal').classList.contains('open')&&document.activeElement&&document.activeElement.tagName!=='TEXTAREA') saveSettings();
+  if(e.key==='Enter'&&document.getElementById('settingsModal').classList.contains('open')&&document.activeElement&&document.activeElement.tagName!=='TEXTAREA'&&document.activeElement.tagName!=='BUTTON') saveSettings();
 });
 
 render();
