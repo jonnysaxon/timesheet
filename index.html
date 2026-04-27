@@ -267,8 +267,9 @@ body.light .job-card:hover{border-color:#b0b8d8;}
         <input class="form-input" id="inputGhRepo" placeholder="yourname/timesheet-data">
       </div>
       <div style="display:flex;gap:8px;margin-bottom:4px">
-        <button class="btn btn-secondary" style="flex:1" onclick="ghTestConnection()">&#10003; Test Connection</button>
-        <button class="btn btn-secondary" style="flex:1" onclick="ghPullNow()">&#8595; Pull from GitHub</button>
+        <button class="btn btn-secondary" style="flex:1" onclick="ghTestConnection()">&#10003; Test</button>
+        <button class="btn btn-secondary" style="flex:1" onclick="ghPullNow()">&#8595; Pull</button>
+        <button class="btn btn-green" style="flex:1" onclick="ghPushNow()">&#8593; Push</button>
       </div>
       <div id="ghStatus" style="font-size:11px;font-family:var(--mono);margin-top:6px;color:var(--text3)"></div>
     </div>
@@ -762,13 +763,21 @@ async function ghPullNow() {
   setSyncStatus('busy','Pulling...');
   try {
     var res=await fetch(ghApiUrl()+'?t='+Date.now(),{headers:ghHeaders()});
-    if(res.status===404){ setGhStatus('No data file found on GitHub yet — push will create it on next save.'); setSyncStatus('ok','GitHub sync on'); return; }
+    // 404 = file not created yet. 403 = repo exists but is empty (GitHub quirk).
+    if(res.status===404||res.status===403){
+      // Try to push current data to initialise the repo
+      setGhStatus('No data file found — pushing current data to initialise...');
+      await ghPush();
+      setGhStatus('Repo initialised with current data. Future changes will sync automatically.');
+      setSyncStatus('ok','GitHub sync on');
+      return;
+    }
     if(!res.ok){ var e=await res.json().catch(function(){return{};}); throw new Error(e.message||'HTTP '+res.status); }
     var data=await res.json();
     ghLastSha=data.sha;
-    var json=JSON.parse(decodeURIComponent(escape(atob(data.content.split('\n').join('')))));  
+    var json=JSON.parse(decodeURIComponent(escape(atob(data.content.split('\n').join('')))));
     if(!json.jobs) throw new Error('Unrecognised data format');
-    // Preserve local token/repo settings, merge rest
+    // Preserve local credentials — they are never stored in GitHub
     var localSettings={ghToken:state.settings.ghToken,ghRepo:state.settings.ghRepo,appUrl:state.settings.appUrl};
     state=ensureFields(json);
     state.settings.ghToken=localSettings.ghToken;
@@ -781,6 +790,14 @@ async function ghPullNow() {
     setGhStatus('Pull failed: '+err.message);
     setSyncStatus('err','Pull failed');
   }
+}
+
+async function ghPushNow() {
+  setGhStatus('Pushing to GitHub...');
+  await ghPush();
+  // ghPush updates the sync dot; also reflect in ghStatus
+  var dot=document.getElementById('syncDot');
+  if(dot&&dot.classList.contains('ok')) setGhStatus('Pushed successfully.');
 }
 
 async function ghTestConnection() {
@@ -935,7 +952,7 @@ render();
 appBooting = false; // allow GitHub pushes from now on
 updateSyncIndicator();
 // Pull latest data from GitHub on startup if configured
-if(ghConfigured()){ ghPullNow().catch(function(){}); }
+if(ghConfigured()){ ghPullNow().catch(function(e){ setSyncStatus('err',e.message); }); }
 </script>
 </body>
 </html>
