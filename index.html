@@ -52,6 +52,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .btn-rollback:hover:not(:disabled){background:rgba(245,158,11,.15);}
 .btn-email{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3);color:var(--amber);}
 .btn-email:hover:not(:disabled){background:rgba(245,158,11,.18);}
+.btn-sync{background:rgba(79,142,247,.12);border-color:rgba(79,142,247,.3);color:var(--accent);}
+.btn-sync:hover:not(:disabled){background:rgba(79,142,247,.22);}
+.btn-sync.dirty{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.35);color:var(--amber);}
 .tab-bar{display:flex;gap:4px;margin-bottom:20px;background:var(--surface);padding:4px;border-radius:9px;border:1px solid var(--border);}
 .tab{flex:1;padding:8px 12px;border-radius:6px;border:none;background:none;color:var(--text2);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;text-align:center;}
 .tab.active{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
@@ -197,6 +200,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
   <button class="btn btn-secondary" onclick="clearWeek()">Clear Week</button>
   <button class="btn btn-email" onclick="emailSummary()">&#9993; Email</button>
   <button class="btn btn-green" onclick="exportExcel()">&#8595; Excel</button>
+  <button class="btn btn-sync" id="syncBtn" onclick="ghPushNow()" style="display:none">&#8593; Sync</button>
 </div>
 
 <!-- ADD/EDIT MODAL -->
@@ -689,8 +693,9 @@ function clearWeek() {
 // localStorage is always written first; GitHub sync is best-effort background.
 
 var GH_FILE = 'timesheet-data.json';
-var ghSyncTimer = null;
+var ghSyncTimer = null; // kept for safety net only
 var ghLastSha = null; // cached SHA needed for updates
+var ghDirty = false;  // true when local state is ahead of GitHub
 
 function ghConfigured() {
   return !!(state.settings.ghToken && state.settings.ghRepo);
@@ -711,20 +716,41 @@ function ghHeaders() {
 
 function setSyncStatus(state_,msg) {
   var dot=document.getElementById('syncDot'), msgEl=document.getElementById('syncMsg');
-  if(dot){ dot.className='sync-dot '+state_; }
+  // map 'dirty' to amber dot
+  var dotClass=state_==='dirty'?'busy':state_;
+  if(dot){ dot.className='sync-dot '+dotClass; }
   if(msgEl){ msgEl.textContent=msg||''; }
 }
 
 function updateSyncIndicator() {
-  if(!ghConfigured()){ setSyncStatus('off',''); return; }
-  setSyncStatus('ok','GitHub sync on');
+  var btn=document.getElementById('syncBtn');
+  if(!ghConfigured()){
+    setSyncStatus('off','');
+    if(btn) btn.style.display='none';
+    return;
+  }
+  if(btn) btn.style.display='';
+  if(ghDirty) markDirty();
+  else setSyncStatus('ok','');
 }
 
-// Called after every saveState — debounced 2s to avoid hammering API on fast typing
+// Mark local state as ahead of GitHub — updates sync dot and Sync button
 function schedulePush() {
   if(!ghConfigured()) return;
-  if(ghSyncTimer) clearTimeout(ghSyncTimer);
-  ghSyncTimer=setTimeout(ghPush,2000);
+  markDirty();
+}
+function markDirty() {
+  if(!ghConfigured()) return;
+  ghDirty=true;
+  setSyncStatus('dirty','Unsynced changes');
+  var btn=document.getElementById('syncBtn');
+  if(btn){ btn.style.display=''; btn.classList.add('dirty'); btn.innerHTML='&#8593; Sync'; btn.disabled=false; }
+}
+function markClean(timeStr) {
+  ghDirty=false;
+  setSyncStatus('ok','Synced '+(timeStr||''));
+  var btn=document.getElementById('syncBtn');
+  if(btn){ btn.classList.remove('dirty'); btn.innerHTML='&#10003; Synced'; }
 }
 
 async function ghPush() {
@@ -746,7 +772,7 @@ async function ghPush() {
     }
     var data=await res.json();
     if(data.content&&data.content.sha) ghLastSha=data.content.sha;
-    setSyncStatus('ok','Saved '+new Date().toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'}));
+    markClean(new Date().toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'}));
   } catch(err) {
     setSyncStatus('err',err.message);
     throw err; // re-throw so ghPushNow and ghPullNow can catch it
@@ -795,12 +821,16 @@ async function ghPullNow() {
 }
 
 async function ghPushNow() {
+  var btn=document.getElementById('syncBtn');
+  if(btn){ btn.disabled=true; btn.innerHTML='<span class="spinner"></span>'; }
   setGhStatus('Pushing to GitHub...');
   try {
     await ghPush();
-    setGhStatus('Pushed successfully at '+new Date().toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'}));
+    var t=new Date().toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'});
+    setGhStatus('Pushed successfully at '+t);
   } catch(err) {
     setGhStatus('Push failed: '+err.message);
+    if(btn){ btn.disabled=false; btn.innerHTML='&#8593; Sync'; }
   }
 }
 
@@ -957,6 +987,12 @@ appBooting = false; // allow GitHub pushes from now on
 updateSyncIndicator();
 // Pull latest data from GitHub on startup if configured
 if(ghConfigured()){ ghPullNow().catch(function(e){ setSyncStatus('err',e.message); }); }
+// Safety net: auto-push if there are unsynced changes when user leaves the app
+document.addEventListener('visibilitychange', function() {
+  if(document.visibilityState==='hidden' && ghDirty && ghConfigured()) {
+    ghPush().catch(function(){});
+  }
+});
 </script>
 </body>
 </html>
