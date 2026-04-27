@@ -731,30 +731,32 @@ async function ghPush() {
   if(!ghConfigured()) return;
   setSyncStatus('busy','Saving...');
   try {
-    // Exclude sensitive settings from cloud copy
+    // Always fetch the current SHA first — avoids conflicts when file
+    // was created manually in GitHub or pushed from another device
+    await ghFetchSha();
     var payload=JSON.parse(JSON.stringify(state));
     delete payload.settings.ghToken; // never store token in GitHub
     var content=btoa(unescape(encodeURIComponent(JSON.stringify(payload,null,2))));
     var body={message:'timesheet update '+new Date().toISOString(), content:content};
     if(ghLastSha) body.sha=ghLastSha;
     var res=await fetch(ghApiUrl(),{method:'PUT',headers:ghHeaders(),body:JSON.stringify(body)});
-    if(res.status===409||res.status===422) {
-      // SHA conflict — fetch latest SHA and retry once
-      await ghFetchSha(); body.sha=ghLastSha;
-      res=await fetch(ghApiUrl(),{method:'PUT',headers:ghHeaders(),body:JSON.stringify(body)});
+    if(!res.ok){
+      var e=await res.json().catch(function(){return{};});
+      throw new Error(e.message||'HTTP '+res.status);
     }
-    if(!res.ok){ var e=await res.json().catch(function(){return{};}); throw new Error(e.message||'HTTP '+res.status); }
     var data=await res.json();
     if(data.content&&data.content.sha) ghLastSha=data.content.sha;
     setSyncStatus('ok','Saved '+new Date().toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'}));
   } catch(err) {
-    setSyncStatus('err','Sync failed: '+err.message);
+    setSyncStatus('err',err.message);
+    throw err; // re-throw so ghPushNow and ghPullNow can catch it
   }
 }
 
 async function ghFetchSha() {
-  var res=await fetch(ghApiUrl(),{headers:ghHeaders()});
+  var res=await fetch(ghApiUrl()+'?t='+Date.now(),{headers:ghHeaders()});
   if(res.ok){ var d=await res.json(); ghLastSha=d.sha; }
+  else { ghLastSha=null; } // file doesn't exist yet — that's fine
 }
 
 async function ghPullNow() {
@@ -794,10 +796,12 @@ async function ghPullNow() {
 
 async function ghPushNow() {
   setGhStatus('Pushing to GitHub...');
-  await ghPush();
-  // ghPush updates the sync dot; also reflect in ghStatus
-  var dot=document.getElementById('syncDot');
-  if(dot&&dot.classList.contains('ok')) setGhStatus('Pushed successfully.');
+  try {
+    await ghPush();
+    setGhStatus('Pushed successfully at '+new Date().toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'}));
+  } catch(err) {
+    setGhStatus('Push failed: '+err.message);
+  }
 }
 
 async function ghTestConnection() {
