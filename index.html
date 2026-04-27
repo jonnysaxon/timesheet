@@ -805,11 +805,22 @@ async function ghPullNow() {
     ghLastSha=data.sha;
     var json=JSON.parse(decodeURIComponent(escape(atob(data.content.split('\n').join('')))));
     if(!json.jobs) throw new Error('Unrecognised data format');
-    // Restore full state from GitHub — repo is private so all settings are stored
-    // Only preserve the ghToken locally since it's the credential used to access GitHub
-    var savedToken=state.settings.ghToken;
-    state=ensureFields(json);
-    if(savedToken) state.settings.ghToken=savedToken;
+    // Merge settings: local wins for any key that exists locally and is non-empty.
+    // GitHub wins for any key that is missing or empty locally.
+    // This means first-time setup on a new device gets all settings from GitHub,
+    // but an existing device never loses its credentials to a stale GitHub copy.
+    var localSettings = state.settings || {};
+    var ghSettings    = json.settings  || {};
+    var merged = {};
+    // Start with GitHub settings as base
+    Object.keys(ghSettings).forEach(function(k){ merged[k] = ghSettings[k]; });
+    // Local non-empty values always win
+    Object.keys(localSettings).forEach(function(k){
+      var v = localSettings[k];
+      if(v !== undefined && v !== null && v !== '') merged[k] = v;
+    });
+    state = ensureFields(json);
+    state.settings = merged;
     saveState(); render();
     setGhStatus('Pulled successfully at '+new Date().toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'}));
     setSyncStatus('ok','GitHub sync on');
