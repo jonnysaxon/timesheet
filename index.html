@@ -761,7 +761,14 @@ async function ghPush() {
     // was created manually in GitHub or pushed from another device
     await ghFetchSha();
     var payload=JSON.parse(JSON.stringify(state));
-    delete payload.settings.ghToken; // never store token in GitHub
+    // Strip all sensitive/device-local settings from the GitHub copy
+    delete payload.settings.ghToken;
+    delete payload.settings.apiKey;
+    delete payload.settings.email;
+    delete payload.settings.role;
+    delete payload.settings.appUrl;
+    delete payload.settings.lightMode;
+    delete payload.settings.backupSnooze;
     var content=btoa(unescape(encodeURIComponent(JSON.stringify(payload,null,2))));
     var body={message:'timesheet update '+new Date().toISOString(), content:content};
     if(ghLastSha) body.sha=ghLastSha;
@@ -805,12 +812,25 @@ async function ghPullNow() {
     ghLastSha=data.sha;
     var json=JSON.parse(decodeURIComponent(escape(atob(data.content.split('\n').join('')))));
     if(!json.jobs) throw new Error('Unrecognised data format');
-    // Preserve local credentials — they are never stored in GitHub
-    var localSettings={ghToken:state.settings.ghToken,ghRepo:state.settings.ghRepo,appUrl:state.settings.appUrl};
+    // Preserve ALL local-only settings — these are never stored in GitHub
+    var localSettings={
+      ghToken: state.settings.ghToken,
+      ghRepo:  state.settings.ghRepo,
+      apiKey:  state.settings.apiKey,
+      email:   state.settings.email,
+      role:    state.settings.role,
+      appUrl:  state.settings.appUrl,
+      lightMode: state.settings.lightMode,
+      lastBackup: state.settings.lastBackup,
+      backupSnooze: state.settings.backupSnooze
+    };
     state=ensureFields(json);
-    state.settings.ghToken=localSettings.ghToken;
-    state.settings.ghRepo=localSettings.ghRepo;
-    if(localSettings.appUrl) state.settings.appUrl=localSettings.appUrl;
+    // Restore everything that should never be overwritten by a pull
+    Object.keys(localSettings).forEach(function(k){
+      if(localSettings[k]!==undefined && localSettings[k]!==null && localSettings[k]!=='') {
+        state.settings[k]=localSettings[k];
+      }
+    });
     saveState(); render();
     setGhStatus('Pulled successfully at '+new Date().toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'}));
     setSyncStatus('ok','GitHub sync on');
