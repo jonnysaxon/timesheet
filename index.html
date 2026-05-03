@@ -174,7 +174,10 @@ body.light .job-card:hover{border-color:#b0b8d8;}
     <div id="apiWarning"></div>
     <div class="job-header">
       <span class="section-label">Job Codes</span>
-      <button class="btn btn-primary" onclick="openAddModal()">+ Add Job Code</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-secondary" id="addExistingBtn" onclick="openAddExistingModal()" style="display:none">+ Add Existing</button>
+        <button class="btn btn-primary" onclick="openAddModal()">+ Add Job Code</button>
+      </div>
     </div>
     <div id="jobList"><div class="empty-state"><div class="icon">&#128203;</div>No job codes yet. Add one to get started.</div></div>
   </div>
@@ -218,6 +221,17 @@ body.light .job-card:hover{border-color:#b0b8d8;}
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('addModal')">Cancel</button>
       <button class="btn btn-primary" onclick="saveJobCode()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD EXISTING JOB MODAL -->
+<div class="modal-overlay" id="addExistingModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title">Add Existing Job to This Week</div>
+    <div id="addExistingList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;max-height:50vh;overflow-y:auto"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('addExistingModal')">Close</button>
     </div>
   </div>
 </div>
@@ -312,10 +326,14 @@ body.light .job-card:hover{border-color:#b0b8d8;}
       <button class="btn btn-secondary" onclick="closeModal('settingsModal')">Cancel</button>
       <button class="btn btn-primary" onclick="saveSettings()">Save</button>
     </div>
+    <div style="text-align:center;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.05em">
+      Timesheet <span id="appVersionDisplay"></span>
+    </div>
   </div>
 </div>
 
 <script>
+var APP_VERSION   = '1.0.0 (2026-04-27)';
 var STORAGE_KEY   = 'timesheet_v5';
 var PREV_KEY      = 'timesheet_v4';
 var BACKUP_WARN_DAYS = 7;
@@ -333,8 +351,8 @@ var currentWeekStart = getWeekStart(new Date());
 var editingJobId = null;
 
 /* ─── STATE ─── */
-function fresh()          { return {jobs:[],entries:{},hours:{},rollbacks:{},settings:{}}; }
-function ensureFields(s)  { if(!s.hours)s.hours={}; if(!s.rollbacks)s.rollbacks={}; if(!s.settings)s.settings={}; return s; }
+function fresh()          { return {jobs:[],entries:{},hours:{},rollbacks:{},weekJobs:{},settings:{}}; }
+function ensureFields(s)  { if(!s.hours)s.hours={}; if(!s.rollbacks)s.rollbacks={}; if(!s.weekJobs)s.weekJobs={}; if(!s.settings)s.settings={}; return s; }
 
 function loadState() {
   try { var r=JSON.parse(localStorage.getItem(STORAGE_KEY)); if(r) return ensureFields(r); } catch(e){}
@@ -410,6 +428,80 @@ function jobWeekTotal(jid) {
   return DAYS.reduce(function(s,d){ var h=parseFloat(getHours(jid,d)); return s+(isNaN(h)?0:h); },0);
 }
 
+/* ─── PER-WEEK JOB VISIBILITY ─── */
+// state.weekJobs[weekKey] = [jobId, jobId, ...] — explicit list of jobs for that week.
+// If a week has no entry yet, default to all jobs (back-compat for existing data).
+function getJobsForCurrentWeek() {
+  var wk = weekKey(currentWeekStart);
+  if (!state.weekJobs) state.weekJobs = {};
+  var list = state.weekJobs[wk];
+  if (Array.isArray(list)) {
+    // Filter out any jobs that no longer exist
+    return list.filter(function(jid){ return state.jobs.some(function(j){return j.id===jid;}); });
+  }
+  // No explicit list yet for this week — auto-carry-forward from the most recent
+  // prior week that has data, or fall back to all jobs if none.
+  var inherited = inheritJobsFromPriorWeek();
+  if (inherited && inherited.length) {
+    state.weekJobs[wk] = inherited.slice();
+    saveState();
+    return inherited;
+  }
+  // No prior data — fall back to all jobs and remember it
+  var allIds = state.jobs.map(function(j){return j.id;});
+  state.weekJobs[wk] = allIds.slice();
+  saveState();
+  return allIds;
+}
+
+function inheritJobsFromPriorWeek() {
+  // Look back up to 8 weeks to find a previously-configured week
+  var cur = new Date(currentWeekStart);
+  for (var i=1; i<=8; i++) {
+    cur.setDate(cur.getDate()-7);
+    var k = weekKey(cur);
+    var l = state.weekJobs && state.weekJobs[k];
+    if (Array.isArray(l) && l.length) {
+      return l.filter(function(jid){ return state.jobs.some(function(j){return j.id===jid;}); });
+    }
+  }
+  // No explicit prior week — derive from any week that has entries
+  var wkRegex = /__(\d{4}-\d{2}-\d{2})__/;
+  var weeksWithData = {};
+  Object.keys(state.entries||{}).forEach(function(k){ var m=k.match(wkRegex); if(m) weeksWithData[m[1]]=1; });
+  Object.keys(state.hours||{}).forEach(function(k){ var m=k.match(wkRegex); if(m) weeksWithData[m[1]]=1; });
+  var sorted = Object.keys(weeksWithData).sort();
+  if (sorted.length) {
+    var lastWk = sorted[sorted.length-1];
+    // Find which jobs had data in that week
+    var jobsWithData = state.jobs.filter(function(j){
+      return DAYS.some(function(d){
+        return state.entries[j.id+'__'+lastWk+'__'+d] || state.hours['h__'+j.id+'__'+lastWk+'__'+d];
+      });
+    });
+    if (jobsWithData.length) return jobsWithData.map(function(j){return j.id;});
+  }
+  return [];
+}
+function setJobsForCurrentWeek(ids) {
+  if (!state.weekJobs) state.weekJobs = {};
+  state.weekJobs[weekKey(currentWeekStart)] = ids.slice();
+  saveState();
+}
+function addJobToCurrentWeek(jid) {
+  var current = getJobsForCurrentWeek();
+  if (current.indexOf(jid)<0) current.push(jid);
+  setJobsForCurrentWeek(current);
+}
+function removeJobFromCurrentWeek(jid) {
+  var current = getJobsForCurrentWeek();
+  setJobsForCurrentWeek(current.filter(function(x){return x!==jid;}));
+}
+function getJobsNotInCurrentWeek() {
+  var inWeek = getJobsForCurrentWeek();
+  return state.jobs.filter(function(j){ return inWeek.indexOf(j.id)<0; });
+}
+
 /* ─── THEME ─── */
 function applyTheme(light) {
   document.body.classList.toggle('light',!!light);
@@ -445,6 +537,9 @@ function snoozeBackup() {
 function render() {
   applyTheme(state.settings.lightMode);
   renderWeekLabel(); renderApiWarning(); renderBackupReminder(); renderJobs();
+  // Show Add Existing button only if there are jobs not in this week
+  var addExistingBtn=document.getElementById('addExistingBtn');
+  if(addExistingBtn) addExistingBtn.style.display = getJobsNotInCurrentWeek().length>0 ? '' : 'none';
   var active=document.querySelector('.tab-panel.active');
   if(active&&active.id==='tab-summary') renderSummary();
   if(active&&active.id==='tab-hours')  renderHoursSummary();
@@ -462,8 +557,20 @@ function renderApiWarning() {
 function renderJobs() {
   var el=document.getElementById('jobList');
   if(!state.jobs.length){ el.innerHTML='<div class="empty-state"><div class="icon">&#128203;</div>No job codes yet. Add one to get started.</div>'; return; }
+  var weekJobIds = getJobsForCurrentWeek();
+  var weekJobs = weekJobIds.map(function(id){ return state.jobs.find(function(j){return j.id===id;}); }).filter(Boolean);
   var dates=getWeekDates(currentWeekStart);
-  el.innerHTML=state.jobs.map(function(job){
+  if (!weekJobs.length) {
+    var available = getJobsNotInCurrentWeek();
+    var addOptions = available.map(function(j){
+      return '<button class="btn btn-secondary" style="margin:4px;padding:6px 12px" onclick="addJobToCurrentWeek(\''+j.id+'\');render()">+ '+esc(j.code)+(j.name?' - '+esc(j.name):'')+'</button>';
+    }).join('');
+    el.innerHTML='<div class="empty-state"><div class="icon">&#128203;</div>No job codes for this week.<br><br>'
+      +(available.length?'<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Add existing:</div>'+addOptions:'')
+      +'</div>';
+    return;
+  }
+  el.innerHTML=weekJobs.map(function(job){
     var hasRB=!!getRollback(job.id);
     var total=jobWeekTotal(job.id);
     var totalBadge=total>0?'<span class="job-week-total">'+fmtH(total)+'h</span>':'';
@@ -488,10 +595,9 @@ function renderJobs() {
       +'<span class="job-code-badge">'+esc(job.code)+'</span>'
       +'<span class="job-name">'+esc(job.name||'')+'</span>'
       +totalBadge
-      +'<div class="job-card-actions">'
-      +'<button class="btn btn-secondary" style="padding:4px 8px;font-size:11px" onclick="event.stopPropagation();openEditModal(\''+job.id+'\')">Edit</button>'
-      +'<button class="btn btn-danger" style="padding:4px 8px;font-size:11px" onclick="event.stopPropagation();deleteJobThisWeek(\''+job.id+'\')">&#10005; Week</button>'
-      +'<button class="btn btn-danger" style="padding:4px 8px;font-size:11px;opacity:.7" onclick="event.stopPropagation();deleteJobAll(\''+job.id+'\')">&#10005; All</button>'
+      +'<div class="job-card-actions" onclick="event.stopPropagation()">'
+      +'<button type="button" class="btn btn-secondary" style="padding:5px 10px;font-size:11px" onclick="openEditModal(\''+job.id+'\');return false" title="Edit job code">Edit</button>'
+      +'<button type="button" class="btn btn-danger" style="padding:5px 10px;font-size:11px;font-weight:600" onclick="deleteJobThisWeek(\''+job.id+'\');return false" title="Remove from this week only">Remove</button>'
       +'<span class="chevron">&#9660;</span>'
       +'</div></div>'
       +'<div class="job-card-body">'
@@ -527,17 +633,12 @@ function fmtH(h) {
 function toggleCard(id) { document.getElementById('card-'+id).classList.toggle('open'); }
 
 function deleteJobThisWeek(jid) {
-  if(!confirm('Clear this job\'s entries for the current week only?')) return;
+  if(!confirm('Remove this job from the current week? Other weeks are unaffected.')) return;
   DAYS.forEach(function(day){ delete state.entries[eKey(jid,currentWeekStart,day)]; delete state.hours[hKey(jid,currentWeekStart,day)]; });
+  removeJobFromCurrentWeek(jid);
   saveState(); render();
 }
-function deleteJobAll(jid) {
-  if(!confirm('Permanently delete this job code and ALL its entries across all weeks?')) return;
-  state.jobs=state.jobs.filter(function(j){return j.id!==jid;});
-  Object.keys(state.entries).forEach(function(k){if(k.indexOf(jid+'__')===0) delete state.entries[k];});
-  Object.keys(state.hours).forEach(function(k){if(k.indexOf('h__'+jid+'__')===0) delete state.hours[k];});
-  saveState(); render();
-}
+
 
 /* ─── SUMMARY ─── */
 function renderSummary() {
@@ -968,6 +1069,25 @@ function openAddModal() {
   document.getElementById('addModal').classList.add('open');
   setTimeout(function(){document.getElementById('inputCode').focus();},100);
 }
+function openAddExistingModal() {
+  var list = document.getElementById('addExistingList');
+  var available = getJobsNotInCurrentWeek();
+  if (!available.length) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px">All your job codes are already on this week.</div>';
+  } else {
+    list.innerHTML = available.map(function(j){
+      return '<button class="btn btn-secondary" style="justify-content:flex-start;padding:10px 14px;text-align:left" onclick="addExistingAndClose(\''+j.id+'\')">'
+        +'<span class="job-code-badge" style="margin-right:8px">'+esc(j.code)+'</span>'
+        +'<span style="color:var(--text2);font-size:12px">'+esc(j.name||'')+'</span></button>';
+    }).join('');
+  }
+  document.getElementById('addExistingModal').classList.add('open');
+}
+function addExistingAndClose(jid) {
+  addJobToCurrentWeek(jid);
+  closeModal('addExistingModal');
+  render();
+}
 function openEditModal(jid) {
   editingJobId=jid;
   var job=state.jobs.find(function(j){return j.id===jid;});
@@ -976,12 +1096,20 @@ function openEditModal(jid) {
   document.getElementById('inputName').value=job.name||'';
   document.getElementById('addModal').classList.add('open');
 }
+
 function saveJobCode() {
   var code=document.getElementById('inputCode').value.trim();
   var name=document.getElementById('inputName').value.trim();
   if(!code){document.getElementById('inputCode').focus();return;}
-  if(editingJobId){var j=state.jobs.find(function(j){return j.id===editingJobId;});if(j){j.code=code;j.name=name;}}
-  else state.jobs.push({id:uid(),code:code,name:name});
+  if(editingJobId){
+    var j=state.jobs.find(function(j){return j.id===editingJobId;});
+    if(j){j.code=code;j.name=name;}
+  } else {
+    var newId = uid();
+    state.jobs.push({id:newId,code:code,name:name});
+    // Add to current week's job list explicitly
+    addJobToCurrentWeek(newId);
+  }
   saveState(); closeModal('addModal'); render();
 }
 function maskValue(val, prefixLen) {
@@ -1027,6 +1155,7 @@ function editSensitive(field) {
   document.getElementById(displayId).style.display = 'none';
 }
 function openSettings() {
+  var verEl=document.getElementById('appVersionDisplay'); if(verEl) verEl.textContent='v'+APP_VERSION;
   populateSettingsForm();
   document.getElementById('ghStatus').textContent='';
   document.getElementById('backupStatus').textContent='';
