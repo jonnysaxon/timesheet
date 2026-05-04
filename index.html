@@ -333,7 +333,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 </div>
 
 <script>
-var APP_VERSION   = '1.0.1 (2026-05-04)';
+var APP_VERSION   = '1.0.2 (2026-05-04)';
 var STORAGE_KEY   = 'timesheet_v5';
 var PREV_KEY      = 'timesheet_v4';
 var BACKUP_WARN_DAYS = 7;
@@ -465,20 +465,49 @@ function jobWeekTotal(jid) {
 function getJobsForCurrentWeek() {
   var wk = weekKey(currentWeekStart);
   if (!state.weekJobs) state.weekJobs = {};
+
+  // Find every job that has actual data (entries OR hours) for this week.
+  // These MUST be included — never hide a job that has data.
+  var jobsWithDataThisWeek = state.jobs.filter(function(j){
+    return DAYS.some(function(d){
+      return (state.entries[eKey(j.id,currentWeekStart,d)]||'').trim() !== ''
+          || (state.hours  [hKey(j.id,currentWeekStart,d)]||'')         !== '';
+    });
+  }).map(function(j){return j.id;});
+
   var list = state.weekJobs[wk];
   if (Array.isArray(list)) {
-    // Filter out any jobs that no longer exist
-    return list.filter(function(jid){ return state.jobs.some(function(j){return j.id===jid;}); });
+    // Keep the user's explicit ordering, drop any non-existent jobs,
+    // and APPEND any jobs that have data but aren't already in the list.
+    var validList = list.filter(function(jid){ return state.jobs.some(function(j){return j.id===jid;}); });
+    var missing = jobsWithDataThisWeek.filter(function(jid){ return validList.indexOf(jid)<0; });
+    if (missing.length>0) {
+      validList = validList.concat(missing);
+      state.weekJobs[wk] = validList.slice();
+      saveState();
+    } else if (validList.length !== list.length) {
+      state.weekJobs[wk] = validList.slice();
+      saveState();
+    }
+    return validList;
   }
-  // No explicit list yet for this week — auto-carry-forward from the most recent
-  // prior week that has data, or fall back to all jobs if none.
+
+  // No explicit list yet — start with jobs that have data this week
+  if (jobsWithDataThisWeek.length>0) {
+    state.weekJobs[wk] = jobsWithDataThisWeek.slice();
+    saveState();
+    return jobsWithDataThisWeek;
+  }
+
+  // No data this week — carry forward from prior week
   var inherited = inheritJobsFromPriorWeek();
   if (inherited && inherited.length) {
     state.weekJobs[wk] = inherited.slice();
     saveState();
     return inherited;
   }
-  // No prior data — fall back to all jobs and remember it
+
+  // No prior data — fall back to all jobs
   var allIds = state.jobs.map(function(j){return j.id;});
   state.weekJobs[wk] = allIds.slice();
   saveState();
