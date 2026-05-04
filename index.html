@@ -346,7 +346,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 </div>
 
 <script>
-var APP_VERSION   = '1.0.3 (2026-05-04)';
+var APP_VERSION   = '1.0.4 (2026-05-04)';
 var STORAGE_KEY   = 'timesheet_v5';
 var PREV_KEY      = 'timesheet_v4';
 var BACKUP_WARN_DAYS = 7;
@@ -489,9 +489,9 @@ function getJobsForCurrentWeek() {
   }).map(function(j){return j.id;});
 
   var list = state.weekJobs[wk];
-  if (Array.isArray(list)) {
-    // Keep the user's explicit ordering, drop any non-existent jobs,
-    // and APPEND any jobs that have data but aren't already in the list.
+
+  // Case 1: Explicit non-empty list exists — use it but ensure jobs with data are included
+  if (Array.isArray(list) && list.length > 0) {
     var validList = list.filter(function(jid){ return state.jobs.some(function(j){return j.id===jid;}); });
     var missing = jobsWithDataThisWeek.filter(function(jid){ return validList.indexOf(jid)<0; });
     if (missing.length>0) {
@@ -505,14 +505,15 @@ function getJobsForCurrentWeek() {
     return validList;
   }
 
-  // No explicit list yet — start with jobs that have data this week
-  if (jobsWithDataThisWeek.length>0) {
+  // Case 2: List is empty array OR doesnt exist — week has no explicit jobs yet
+  // If this week has data, use the jobs with data
+  if (jobsWithDataThisWeek.length > 0) {
     state.weekJobs[wk] = jobsWithDataThisWeek.slice();
     saveState();
     return jobsWithDataThisWeek;
   }
 
-  // No data this week — carry forward from prior week
+  // No data this week, no explicit list — carry forward from immediately prior week
   var inherited = inheritJobsFromPriorWeek();
   if (inherited && inherited.length) {
     state.weekJobs[wk] = inherited.slice();
@@ -520,7 +521,7 @@ function getJobsForCurrentWeek() {
     return inherited;
   }
 
-  // No prior data — fall back to all jobs
+  // Truly nothing — fall back to all jobs
   var allIds = state.jobs.map(function(j){return j.id;});
   state.weekJobs[wk] = allIds.slice();
   saveState();
@@ -528,31 +529,29 @@ function getJobsForCurrentWeek() {
 }
 
 function inheritJobsFromPriorWeek() {
-  // Look back up to 8 weeks to find a previously-configured week
+  // Walk backwards one week at a time, looking for the most recent prior week
+  // that has either an explicit non-empty job list OR actual data
   var cur = new Date(currentWeekStart);
-  for (var i=1; i<=8; i++) {
-    cur.setDate(cur.getDate()-7);
+  for (var i = 1; i <= 26; i++) { // look back up to 6 months
+    cur.setDate(cur.getDate() - 7);
     var k = weekKey(cur);
-    var l = state.weekJobs && state.weekJobs[k];
-    if (Array.isArray(l) && l.length) {
-      return l.filter(function(jid){ return state.jobs.some(function(j){return j.id===jid;}); });
+
+    // First check explicit weekJobs list for that week
+    var explicitList = state.weekJobs && state.weekJobs[k];
+    if (Array.isArray(explicitList) && explicitList.length > 0) {
+      return explicitList.filter(function(jid){
+        return state.jobs.some(function(j){ return j.id === jid; });
+      });
     }
-  }
-  // No explicit prior week — derive from any week that has entries
-  var wkRegex = /__(\d{4}-\d{2}-\d{2})__/;
-  var weeksWithData = {};
-  Object.keys(state.entries||{}).forEach(function(k){ var m=k.match(wkRegex); if(m) weeksWithData[m[1]]=1; });
-  Object.keys(state.hours||{}).forEach(function(k){ var m=k.match(wkRegex); if(m) weeksWithData[m[1]]=1; });
-  var sorted = Object.keys(weeksWithData).sort();
-  if (sorted.length) {
-    var lastWk = sorted[sorted.length-1];
-    // Find which jobs had data in that week
+
+    // Else check if any jobs have data for that week
     var jobsWithData = state.jobs.filter(function(j){
       return DAYS.some(function(d){
-        return state.entries[j.id+'__'+lastWk+'__'+d] || state.hours['h__'+j.id+'__'+lastWk+'__'+d];
+        return (state.entries[j.id+'__'+k+'__'+d]||'').trim() !== ''
+            || (state.hours  ['h__'+j.id+'__'+k+'__'+d]||'')        !== '';
       });
-    });
-    if (jobsWithData.length) return jobsWithData.map(function(j){return j.id;});
+    }).map(function(j){return j.id;});
+    if (jobsWithData.length > 0) return jobsWithData;
   }
   return [];
 }
