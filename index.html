@@ -52,6 +52,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .btn-rollback:hover:not(:disabled){background:rgba(245,158,11,.15);}
 .btn-email{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3);color:var(--amber);}
 .btn-email:hover:not(:disabled){background:rgba(245,158,11,.18);}
+.btn-save{background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.5);color:var(--green);font-weight:600;}
+.btn-save:hover:not(:disabled){background:rgba(34,197,94,.28);}
+.btn-save:disabled{background:var(--surface2);border-color:var(--border);color:var(--text3);font-weight:500;cursor:not-allowed;}
 .btn-sync{background:rgba(79,142,247,.12);border-color:rgba(79,142,247,.3);color:var(--accent);}
 .btn-sync:hover:not(:disabled){background:rgba(79,142,247,.22);}
 .btn-sync.dirty{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.35);color:var(--amber);}
@@ -135,6 +138,14 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 .notice-backup button.dismiss{border-color:var(--border);color:var(--text3);}
 .notice-backup button.dismiss:hover{border-color:var(--text3);color:var(--text2);}
 .empty-state{text-align:center;padding:48px 24px;color:var(--text3);font-size:13px;}
+.proj-row{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.proj-info{flex:1;min-width:120px;display:flex;flex-direction:column;gap:4px;}
+.proj-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--text3);}
+.proj-status{font-family:var(--mono);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.05em;}
+.proj-status.open{color:var(--green);background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);}
+.proj-status.closed{color:var(--text3);background:var(--surface2);border:1px solid var(--border);}
+.proj-hours{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent);background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.25);padding:3px 10px;border-radius:5px;white-space:nowrap;}
+.proj-actions{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;}
 .empty-state .icon{font-size:32px;margin-bottom:10px;}
 .today-dot{width:6px;height:6px;background:var(--green);border-radius:50%;display:inline-block;}
 @keyframes spin{to{transform:rotate(360deg);}}
@@ -179,17 +190,18 @@ body.light .job-card:hover{border-color:#b0b8d8;}
   <div class="tab-bar">
     <button class="tab active" onclick="switchTab('entry',this)">Entry</button>
     <button class="tab" onclick="switchTab('summary',this)">Summary</button>
-    <button class="tab" onclick="switchTab('hours',this)">Hours Summary</button>
+    <button class="tab" onclick="switchTab('hours',this)">Hours</button>
+    <button class="tab" onclick="switchTab('projects',this)">Projects</button>
   </div>
 
   <div class="tab-panel active" id="tab-entry">
     <div id="backupReminder"></div>
     <div id="apiWarning"></div>
     <div class="job-header">
-      <span class="section-label">Job Codes</span>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <span class="section-label">Project Entries</span>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-save" id="saveWeekBtn" onclick="saveWeekManually()" disabled>&#128190; Save</button>
         <button class="btn btn-secondary" id="addExistingBtn" onclick="openAddExistingModal()" style="display:none">+ Add Existing</button>
-        <button class="btn btn-primary" onclick="openAddModal()">+ Add Job Code</button>
       </div>
     </div>
     <div id="jobList"><div class="empty-state"><div class="icon">&#128203;</div>No job codes yet. Add one to get started.</div></div>
@@ -210,6 +222,19 @@ body.light .job-card:hover{border-color:#b0b8d8;}
     </div>
     <div id="hoursSummaryList"></div>
   </div>
+
+  <div class="tab-panel" id="tab-projects">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <span class="section-label">Project Codes</span>
+      <button class="btn btn-primary" onclick="openAddModal()">+ Add New Project</button>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+      <button class="btn btn-secondary" id="filterAllBtn" onclick="setProjectFilter('all',this)">All</button>
+      <button class="btn btn-secondary" id="filterOpenBtn" onclick="setProjectFilter('open',this)">Open</button>
+      <button class="btn btn-secondary" id="filterClosedBtn" onclick="setProjectFilter('closed',this)">Closed</button>
+    </div>
+    <div id="projectsList"></div>
+  </div>
 </div>
 
 <div class="footer-bar">
@@ -222,10 +247,10 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 <!-- ADD/EDIT MODAL -->
 <div class="modal-overlay" id="addModal">
   <div class="modal">
-    <div class="modal-title" id="modalTitle">Add Job Code</div>
+    <div class="modal-title" id="modalTitle">Add Project Code</div>
     <div class="form-group">
-      <label class="form-label">Job Code</label>
-      <input class="form-input" id="inputCode" placeholder="e.g. JOB-001" maxlength="30">
+      <label class="form-label">Project Code</label>
+      <input class="form-input" id="inputCode" placeholder="e.g. PROJ-001" maxlength="30">
     </div>
     <div class="form-group">
       <label class="form-label">Description (optional)</label>
@@ -346,7 +371,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 </div>
 
 <script>
-var APP_VERSION   = '1.0.6 (2026-05-04)';
+var APP_VERSION   = '1.2.4 (2026-05-05)';
 var STORAGE_KEY   = 'timesheet_v5';
 var PREV_KEY      = 'timesheet_v4';
 var BACKUP_WARN_DAYS = 7;
@@ -362,39 +387,58 @@ var suppressVisibilityPush = 0; // timestamp until which visibilitychange should
 var state = loadState();
 var currentWeekStart = getWeekStart(new Date());
 var editingJobId = null;
+var pendingWeekChanges = false; // true when user has added/removed jobs on a no-hours week
 
 /* ─── STATE ─── */
 function fresh()          { return {jobs:[],entries:{},hours:{},rollbacks:{},weekJobs:{},settings:{}}; }
-function ensureFields(s)  { if(!s.hours)s.hours={}; if(!s.rollbacks)s.rollbacks={}; if(!s.weekJobs)s.weekJobs={}; if(!s.settings)s.settings={}; return s; }
+function ensureFields(s)  {
+  if(!s.hours)s.hours={};
+  if(!s.rollbacks)s.rollbacks={};
+  if(!s.weekJobs)s.weekJobs={};
+  if(!s.settings)s.settings={};
+  if(Array.isArray(s.jobs)) {
+    s.jobs.forEach(function(j){ if(!j.status) j.status='open'; });
+  }
+  // Clean up any stale weekExplicit flag from earlier buggy versions
+  if (s.weekExplicit) delete s.weekExplicit;
+  return s;
+}
 
 // One-time repair: if a week has entries/hours for a job NOT listed in weekJobs[wk],
 // add that job to the list. Fixes data corrupted by earlier buggy versions.
 function repairWeekJobs(s) {
-  if(!s||!s.entries||!s.weekJobs) return s;
+  if(!s) return s;
+  if(!s.weekJobs) s.weekJobs = {};
   var weekRegex = /^(?:h__)?(.+?)__(\d{4}-\d{2}-\d{2})__(sat|sun|mon|tue|wed|thu|fri)$/;
-  var dataByWeek = {}; // {weekKey: Set<jobId>}
+  var dataByWeek = {};
   function collect(map) {
     Object.keys(map||{}).forEach(function(k){
       var m = k.match(weekRegex);
       if(!m) return;
       var jid=m[1], wk=m[2], val=map[k];
-      if(val===''||val===null||val===undefined) return; // ignore empty values
+      if(val===''||val===null||val===undefined) return;
       if(!dataByWeek[wk]) dataByWeek[wk]={};
       dataByWeek[wk][jid]=true;
     });
   }
   collect(s.entries);
   collect(s.hours);
-  // For each week, ensure weekJobs[wk] contains every job that has data
+
+  // STRICT "saved or no entry" rule: only keep weekJobs entries for weeks
+  // that have actual entries/hours data. All other entries are removed
+  // (treated as stale from earlier buggy versions). User can re-Save any
+  // they need to keep.
+  var newWeekJobs = {};
   Object.keys(dataByWeek).forEach(function(wk){
     var existing = Array.isArray(s.weekJobs[wk]) ? s.weekJobs[wk].slice() : [];
-    var changed = false;
     Object.keys(dataByWeek[wk]).forEach(function(jid){
-      if(!s.jobs.some(function(j){return j.id===jid;})) return; // job no longer exists
-      if(existing.indexOf(jid)<0){ existing.push(jid); changed=true; }
+      if(!s.jobs.some(function(j){return j.id===jid;})) return;
+      if(existing.indexOf(jid)<0) existing.push(jid);
     });
-    if(changed||!Array.isArray(s.weekJobs[wk])) s.weekJobs[wk]=existing;
+    existing = existing.filter(function(jid){ return s.jobs.some(function(j){return j.id===jid;}); });
+    newWeekJobs[wk] = existing;
   });
+  s.weekJobs = newWeekJobs;
   return s;
 }
 
@@ -435,19 +479,28 @@ function getWeekDates(ws) { return DAYS.map(function(_,i){ var d=new Date(ws); d
 function weekKey(ws)      { return ws.toISOString().slice(0,10); }
 function formatDate(d)    { return d.toLocaleDateString('en-NZ',{day:'2-digit',month:'short'}); }
 function isToday(d)       { var t=new Date(); return d.getDate()===t.getDate()&&d.getMonth()===t.getMonth()&&d.getFullYear()===t.getFullYear(); }
-function changeWeek(dir)  { currentWeekStart=new Date(currentWeekStart); currentWeekStart.setDate(currentWeekStart.getDate()+dir*7); render(); }
-function goToToday()      { currentWeekStart=getWeekStart(new Date()); render(); }
+function changeWeek(dir)  { currentWeekStart=new Date(currentWeekStart); currentWeekStart.setDate(currentWeekStart.getDate()+dir*7); clearDraft(); render(); }
+function goToToday()      { currentWeekStart=getWeekStart(new Date()); clearDraft(); render(); }
 
 /* ─── ENTRY / HOURS (named day keys) ─── */
 function eKey(jid,ws,day) { return jid+'__'+weekKey(ws)+'__'+day; }
 function hKey(jid,ws,day) { return 'h__'+jid+'__'+weekKey(ws)+'__'+day; }
 function getEntry(jid,day)     { return state.entries[eKey(jid,currentWeekStart,day)]||''; }
-function setEntry(jid,day,val) { state.entries[eKey(jid,currentWeekStart,day)]=val; saveState(); }
+function setEntry(jid,day,val) {
+  var visibleIds = getJobsForCurrentWeek();
+  var k = eKey(jid,currentWeekStart,day);
+  if(!val || val.trim()==='') delete state.entries[k];
+  else state.entries[k]=val;
+  persistCurrentWeekIfHasData(visibleIds);
+  saveState();
+}
 function getHours(jid,day)     { return state.hours[hKey(jid,currentWeekStart,day)]||''; }
 function setHours(jid,day,val) {
+  var visibleIds = getJobsForCurrentWeek();
   var v=parseFloat(val);
   if(!val||isNaN(v)||v===0) delete state.hours[hKey(jid,currentWeekStart,day)];
   else state.hours[hKey(jid,currentWeekStart,day)]=String(v);
+  persistCurrentWeekIfHasData(visibleIds);
   saveState();
 }
 
@@ -462,7 +515,7 @@ function getRollback(jid)   { return (state.rollbacks&&state.rollbacks[rbKey(jid
 function clearRollback(jid) { if(state.rollbacks){ delete state.rollbacks[rbKey(jid,currentWeekStart)]; saveState(); } }
 function rollbackAI(jid) {
   var snap=getRollback(jid); if(!snap) return;
-  if(!confirm('Restore all entries to their pre-AI state?')) return;
+  if(!safeConfirm('Restore all entries to their pre-AI state?')) return;
   DAYS.forEach(function(d){ setEntry(jid,d,snap[d]||''); });
   clearRollback(jid); render();
 }
@@ -472,6 +525,38 @@ function jobWeekTotal(jid) {
   return DAYS.reduce(function(s,d){ var h=parseFloat(getHours(jid,d)); return s+(isNaN(h)?0:h); },0);
 }
 
+/* Total hours across ALL weeks for a job */
+function jobTotalHours(jid) {
+  var prefix = 'h__'+jid+'__';
+  var sum = 0;
+  Object.keys(state.hours||{}).forEach(function(k){
+    if(k.indexOf(prefix)===0) {
+      var v = parseFloat(state.hours[k]);
+      if(!isNaN(v)) sum+=v;
+    }
+  });
+  return sum;
+}
+
+/* Open project filter — closed projects are excluded from being added to weeks */
+function isJobOpen(j) { return !j.status || j.status==='open'; }
+function getOpenJobs() { return state.jobs.filter(isJobOpen); }
+function getOpenJobIds() { return getOpenJobs().map(function(j){return j.id;}); }
+
+/* Sandbox-safe confirm: native confirm() silently returns false inside iframes
+   like the Claude preview, blocking destructive actions. Detect that case and
+   skip the prompt — the user already initiated the action via the button. */
+function isInRestrictedFrame() {
+  try { return window.self !== window.top; } catch(e) { return true; }
+}
+function safeConfirm(msg) {
+  if (isInRestrictedFrame()) return true; // assume yes — user clicked the button
+  try {
+    if (typeof confirm === 'function') return confirm(msg);
+  } catch(e) {}
+  return true;
+}
+
 /* ─── PER-WEEK JOB VISIBILITY ─── */
 // state.weekJobs[weekKey] = [jobId, jobId, ...] — explicit list of jobs for that week.
 // If a week has no entry yet, default to all jobs (back-compat for existing data).
@@ -479,77 +564,93 @@ function getJobsForCurrentWeek() {
   var wk = weekKey(currentWeekStart);
   if (!state.weekJobs) state.weekJobs = {};
 
-  // RULE 1: If this week has ANY entries or hours, the list is "locked".
-  // Use the explicit weekJobs list (or derive from data if no list yet).
-  var hasDataThisWeek = state.jobs.some(function(j){
+  // A week becomes "persistent" when:
+  //   1. It has any entries or hours (auto)
+  //   2. The user explicitly saved (weekJobs[wk] exists)
+  // Otherwise the list is computed live from the prior week each call,
+  // possibly with the in-memory session draft layered on top.
+  var hasHours = currentWeekHasHours();
+  var hasEntries = state.jobs.some(function(j){
     return DAYS.some(function(d){
-      return (state.entries[eKey(j.id,currentWeekStart,d)]||'').trim() !== ''
-          || (state.hours  [hKey(j.id,currentWeekStart,d)]||'')         !== '';
+      return (state.entries[eKey(j.id,currentWeekStart,d)]||'').trim() !== '';
     });
   });
+  var hasData = hasHours || hasEntries;
+  var hasExplicitList = Array.isArray(state.weekJobs[wk]);
 
-  if (hasDataThisWeek) {
-    // Locked: respect explicit list. Always include any job that has data.
-    var jobsWithData = state.jobs.filter(function(j){
-      return DAYS.some(function(d){
-        return (state.entries[eKey(j.id,currentWeekStart,d)]||'').trim() !== ''
-            || (state.hours  [hKey(j.id,currentWeekStart,d)]||'')         !== '';
-      });
-    }).map(function(j){return j.id;});
-
-    var explicit = Array.isArray(state.weekJobs[wk]) ? state.weekJobs[wk] : [];
-    var validExplicit = explicit.filter(function(jid){ return state.jobs.some(function(j){return j.id===jid;}); });
-    // Append any jobs that have data but arent in the explicit list
-    var missing = jobsWithData.filter(function(jid){ return validExplicit.indexOf(jid)<0; });
-    var final = validExplicit.concat(missing);
-    if (final.length === 0) final = jobsWithData;
-    if (JSON.stringify(state.weekJobs[wk]) !== JSON.stringify(final)) {
-      state.weekJobs[wk] = final.slice();
-      saveState();
-    }
-    return final;
+  // If no hours but theres a draft, draft is the authoritative view (the user
+  // is editing a previously-saved or stale persisted week — Save persists, Cancel
+  // by navigation discards).
+  if (!hasHours) {
+    var draft = getDraftIds();
+    if (draft) return draft;
   }
 
-  // RULE 2: No data anywhere this week — list is NOT locked.
-  // Always recompute from prior week, ignoring any cached weekJobs[wk].
-  // This gives the user a fresh copy of the prior week list to start from.
+  if (hasData || hasExplicitList) {
+    var explicit = hasExplicitList ? state.weekJobs[wk] : [];
+    var validExplicit = explicit.filter(function(jid){
+      return state.jobs.some(function(j){return j.id===jid;});
+    });
+
+    if (hasData) {
+      var jobsWithData = state.jobs.filter(function(j){
+        return DAYS.some(function(d){
+          return (state.entries[eKey(j.id,currentWeekStart,d)]||'').trim() !== ''
+              || (state.hours  [hKey(j.id,currentWeekStart,d)]||'')         !== '';
+        });
+      }).map(function(j){return j.id;});
+      var missing = jobsWithData.filter(function(jid){ return validExplicit.indexOf(jid)<0; });
+      validExplicit = validExplicit.concat(missing);
+
+      // If hours were just added to a week that had a draft, auto-persist
+      if (hasHours && weekDraft && weekDraft.wk===wk) {
+        // Merge draft additions into the persisted list
+        weekDraft.jobIds.forEach(function(jid){
+          if (validExplicit.indexOf(jid)<0 && state.jobs.some(function(j){return j.id===jid;})) {
+            validExplicit.push(jid);
+          }
+        });
+        clearDraft();
+      }
+    }
+
+    if (JSON.stringify(state.weekJobs[wk]) !== JSON.stringify(validExplicit)) {
+      state.weekJobs[wk] = validExplicit.slice();
+      saveState();
+    }
+    return validExplicit;
+  }
+
+  // Not persisted: compute fresh from prior week, then layer the draft on top
   var inherited = inheritJobsFromPriorWeek();
-  if (inherited && inherited.length) {
-    // Only update saved state if it actually changed, to avoid spurious saves
-    if (JSON.stringify(state.weekJobs[wk]) !== JSON.stringify(inherited)) {
-      state.weekJobs[wk] = inherited.slice();
-      saveState();
-    }
-    return inherited;
-  }
-
-  // No prior week either — fall back to all jobs
-  var allIds = state.jobs.map(function(j){return j.id;});
-  if (JSON.stringify(state.weekJobs[wk]) !== JSON.stringify(allIds)) {
-    state.weekJobs[wk] = allIds.slice();
-    saveState();
-  }
-  return allIds;
+  var base = (inherited && inherited.length) ? inherited : [];
+  // If theres a draft for this week, use it
+  var draft = getDraftIds();
+  if (draft) return draft;
+  return base;
 }
 
 function inheritJobsFromPriorWeek() {
   // Walk backwards one week at a time, looking for the most recent prior week
-  // that has either an explicit non-empty job list OR actual data
+  // that has either an explicit non-empty job list OR actual data.
+  // Only OPEN jobs are inherited — closed projects do not auto-appear on new weeks.
+  var openIds = getOpenJobIds();
   var cur = new Date(currentWeekStart);
-  for (var i = 1; i <= 26; i++) { // look back up to 6 months
+  for (var i = 1; i <= 26; i++) {
     cur.setDate(cur.getDate() - 7);
     var k = weekKey(cur);
 
-    // First check explicit weekJobs list for that week
     var explicitList = state.weekJobs && state.weekJobs[k];
     if (Array.isArray(explicitList) && explicitList.length > 0) {
-      return explicitList.filter(function(jid){
-        return state.jobs.some(function(j){ return j.id === jid; });
+      var validOpen = explicitList.filter(function(jid){
+        return state.jobs.some(function(j){ return j.id === jid; }) && openIds.indexOf(jid)>=0;
       });
+      if (validOpen.length>0) return validOpen;
+      // If no open jobs in prior list, keep walking back
     }
 
-    // Else check if any jobs have data for that week
     var jobsWithData = state.jobs.filter(function(j){
+      if (!isJobOpen(j)) return false;
       return DAYS.some(function(d){
         return (state.entries[j.id+'__'+k+'__'+d]||'').trim() !== ''
             || (state.hours  ['h__'+j.id+'__'+k+'__'+d]||'')        !== '';
@@ -567,15 +668,120 @@ function setJobsForCurrentWeek(ids) {
 function addJobToCurrentWeek(jid) {
   var current = getJobsForCurrentWeek();
   if (current.indexOf(jid)<0) current.push(jid);
-  setJobsForCurrentWeek(current);
+  // Hours are the only thing that makes a week auto-persistent.
+  // Without hours, edits go to the in-memory draft until Save is pressed.
+  if (currentWeekHasHours()) {
+    setJobsForCurrentWeek(current);
+  } else {
+    setDraftIds(current);
+  }
 }
+
+
 function removeJobFromCurrentWeek(jid) {
   var current = getJobsForCurrentWeek();
-  setJobsForCurrentWeek(current.filter(function(x){return x!==jid;}));
+  var filtered = current.filter(function(x){return x!==jid;});
+  if (currentWeekHasHours()) {
+    setJobsForCurrentWeek(filtered);
+  } else {
+    setDraftIds(filtered);
+  }
 }
 function getJobsNotInCurrentWeek() {
   var inWeek = getJobsForCurrentWeek();
-  return state.jobs.filter(function(j){ return inWeek.indexOf(j.id)<0; });
+  // Only OPEN jobs can be added to weeks; closed projects are hidden
+  return state.jobs.filter(function(j){ return inWeek.indexOf(j.id)<0 && isJobOpen(j); });
+}
+
+// In-memory draft for the current week's job list edits when the week has no hours.
+// Cleared on week change. Promoted to weekJobs on Save (or auto-promoted when hours added).
+var weekDraft = null;       // {wk: '...', jobIds: [...]}
+function getDraftIds() {
+  if (!weekDraft) return null;
+  if (weekDraft.wk !== weekKey(currentWeekStart)) return null;
+  return weekDraft.jobIds.slice();
+}
+function setDraftIds(ids) {
+  weekDraft = { wk: weekKey(currentWeekStart), jobIds: ids.slice() };
+  pendingWeekChanges = true;
+  updateSaveBtn();
+}
+function clearDraft() {
+  weekDraft = null;
+  pendingWeekChanges = false;
+  updateSaveBtn();
+}
+function updateSaveBtn() {
+  var btn = document.getElementById('saveWeekBtn');
+  if (!btn) return;
+  // Enable if there are pending changes AND week has no hours
+  // (if week has hours, changes are auto-saved so button stays disabled)
+  var hasHrs = currentWeekHasHours();
+  if (pendingWeekChanges && !hasHrs) {
+    btn.disabled = false;
+  } else {
+    btn.disabled = true;
+  }
+}
+function currentWeekHasHours() {
+  return state.jobs.some(function(j){
+    return DAYS.some(function(d){
+      return (state.hours[hKey(j.id,currentWeekStart,d)]||'') !== '';
+    });
+  });
+}
+function currentWeekHasEntries() {
+  return state.jobs.some(function(j){
+    return DAYS.some(function(d){
+      return (state.entries[eKey(j.id,currentWeekStart,d)]||'').trim() !== '';
+    });
+  });
+}
+function currentWeekHasData() {
+  return currentWeekHasHours() || currentWeekHasEntries();
+}
+function validJobIds(ids) {
+  return (ids||[]).filter(function(jid,idx,arr){
+    return arr.indexOf(jid)===idx && state.jobs.some(function(j){return j.id===jid;});
+  });
+}
+function weekHasData(wk) {
+  var re = new RegExp('^(?:h__)?(.+?)__'+wk+'__(sat|sun|mon|tue|wed|thu|fri)$');
+  function has(map) {
+    return Object.keys(map||{}).some(function(k){
+      if(!re.test(k)) return false;
+      var v = map[k];
+      return v !== '' && v !== null && v !== undefined;
+    });
+  }
+  return has(state.entries) || has(state.hours);
+}
+function pruneFutureWeeksAfter(wk) {
+  Object.keys(state.weekJobs||{}).forEach(function(k){
+    if (k > wk && !weekHasData(k)) delete state.weekJobs[k];
+  });
+}
+function persistCurrentWeekIfHasData(visibleIds) {
+  if (!currentWeekHasData()) return;
+  if (!state.weekJobs) state.weekJobs = {};
+  var wk = weekKey(currentWeekStart);
+  state.weekJobs[wk] = validJobIds(visibleIds);
+  pruneFutureWeeksAfter(wk);
+  clearDraft();
+}
+function saveWeekManually() {
+  if (!state.weekJobs) state.weekJobs = {};
+  var ids = getDraftIds();
+  if (!ids) return;
+  var thisWk = weekKey(currentWeekStart);
+  state.weekJobs[thisWk] = ids;
+
+  // The saved week is now the starting point for following unsaved weeks.
+  pruneFutureWeeksAfter(thisWk);
+
+  clearDraft();
+  saveState();
+  render();
 }
 
 /* ─── THEME ─── */
@@ -613,9 +819,9 @@ function snoozeBackup() {
 function render() {
   applyTheme(state.settings.lightMode);
   renderWeekLabel(); renderApiWarning(); renderBackupReminder(); renderJobs();
-  // Show Add Existing button only if there are jobs not in this week
   var addExistingBtn=document.getElementById('addExistingBtn');
   if(addExistingBtn) addExistingBtn.style.display = getJobsNotInCurrentWeek().length>0 ? '' : 'none';
+  updateSaveBtn();
   var active=document.querySelector('.tab-panel.active');
   if(active&&active.id==='tab-summary') renderSummary();
   if(active&&active.id==='tab-hours')  renderHoursSummary();
@@ -632,7 +838,7 @@ function renderApiWarning() {
 
 function renderJobs() {
   var el=document.getElementById('jobList');
-  if(!state.jobs.length){ el.innerHTML='<div class="empty-state"><div class="icon">&#128203;</div>No job codes yet. Add one to get started.</div>'; return; }
+  if(!state.jobs.length){ el.innerHTML='<div class="empty-state"><div class="icon">&#128203;</div>No projects yet. Create one in the Projects tab.</div>'; return; }
   var weekJobIds = getJobsForCurrentWeek();
   var weekJobs = weekJobIds.map(function(id){ return state.jobs.find(function(j){return j.id===id;}); }).filter(Boolean);
   var dates=getWeekDates(currentWeekStart);
@@ -641,7 +847,7 @@ function renderJobs() {
     var addOptions = available.map(function(j){
       return '<button class="btn btn-secondary" style="margin:4px;padding:6px 12px" onclick="addJobToCurrentWeek(\''+j.id+'\');render()">+ '+esc(j.code)+(j.name?' - '+esc(j.name):'')+'</button>';
     }).join('');
-    el.innerHTML='<div class="empty-state"><div class="icon">&#128203;</div>No job codes for this week.<br><br>'
+    el.innerHTML='<div class="empty-state"><div class="icon">&#128203;</div>No projects for this week.<br><br>'
       +(available.length?'<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Add existing:</div>'+addOptions:'')
       +'</div>';
     return;
@@ -709,7 +915,7 @@ function fmtH(h) {
 function toggleCard(id) { document.getElementById('card-'+id).classList.toggle('open'); }
 
 function deleteJobThisWeek(jid) {
-  if(!confirm('Remove this job from the current week? Other weeks are unaffected.')) return;
+  if(!safeConfirm('Remove this job from the current week? Other weeks are unaffected.')) return;
   DAYS.forEach(function(day){ delete state.entries[eKey(jid,currentWeekStart,day)]; delete state.hours[hKey(jid,currentWeekStart,day)]; });
   removeJobFromCurrentWeek(jid);
   saveState(); render();
@@ -784,6 +990,114 @@ function copyHoursSummary(btn) {
     var o=btn.innerHTML; btn.innerHTML='&#10003; Copied!'; btn.style.color='var(--green)';
     setTimeout(function(){btn.innerHTML=o;btn.style.color='';},1800);
   });
+}
+
+/* ─── PROJECTS TAB ─── */
+var projectFilter = 'all';
+function setProjectFilter(filter, btn) {
+  projectFilter = filter;
+  ['filterAllBtn','filterOpenBtn','filterClosedBtn'].forEach(function(id){
+    var b = document.getElementById(id);
+    if (b) {
+      b.classList.remove('btn-primary');
+      b.classList.add('btn-secondary');
+    }
+  });
+  if (btn) {
+    btn.classList.remove('btn-secondary');
+    btn.classList.add('btn-primary');
+  }
+  renderProjects();
+}
+
+function renderProjects() {
+  var el = document.getElementById('projectsList');
+  if (!el) return;
+  if (!state.jobs.length) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">&#128193;</div>No projects yet. Tap "+ Add Project" to create one.</div>';
+    return;
+  }
+
+  // Filter
+  var jobs = state.jobs.slice();
+  if (projectFilter==='open')   jobs = jobs.filter(isJobOpen);
+  if (projectFilter==='closed') jobs = jobs.filter(function(j){return !isJobOpen(j);});
+
+  // Sort: open first, then by code
+  jobs.sort(function(a,b){
+    if (isJobOpen(a)!==isJobOpen(b)) return isJobOpen(a)?-1:1;
+    return (a.code||'').localeCompare(b.code||'');
+  });
+
+  if (!jobs.length) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">&#128203;</div>No projects in this filter.</div>';
+    return;
+  }
+
+  el.innerHTML = jobs.map(function(j){
+    var total = jobTotalHours(j.id);
+    var open = isJobOpen(j);
+    var closedInfo = '';
+    if (!open && j.closedDate) {
+      var d = new Date(j.closedDate);
+      closedInfo = '<span>Closed '+d.toLocaleDateString('en-NZ',{day:'2-digit',month:'short',year:'numeric'})+'</span>';
+    }
+    var totalLabel = total>0 ? fmtH(total)+'h' : '0h';
+    var actions = open
+      ? '<button class="btn btn-secondary" style="padding:5px 10px;font-size:11px" onclick="openEditModal(\''+j.id+'\')">Edit</button>'
+        +'<button class="btn btn-secondary" style="padding:5px 10px;font-size:11px" onclick="closeProject(\''+j.id+'\')">Close</button>'
+      : '<button class="btn btn-secondary" style="padding:5px 10px;font-size:11px" onclick="reopenProject(\''+j.id+'\')">Reopen</button>'
+        +'<button class="btn btn-danger" style="padding:5px 10px;font-size:11px" onclick="deleteProjectPermanently(\''+j.id+'\')">Delete</button>';
+    return '<div class="proj-row">'
+      +'<div class="proj-info">'
+      +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+        +'<span class="job-code-badge">'+esc(j.code)+'</span>'
+        +'<span class="proj-status '+(open?'open':'closed')+'">'+(open?'Open':'Closed')+'</span>'
+      +'</div>'
+      +(j.name?'<div style="font-size:12px;color:var(--text2)">'+esc(j.name)+'</div>':'')
+      +(closedInfo?'<div class="proj-meta">'+closedInfo+'</div>':'')
+      +'</div>'
+      +'<div class="proj-hours">'+totalLabel+'</div>'
+      +'<div class="proj-actions">'+actions+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function closeProject(jid) {
+  if (!safeConfirm('Close this project? It will no longer be available to add to timesheets, but past entries are kept.')) return;
+  var j = state.jobs.find(function(x){return x.id===jid;});
+  if (!j) return;
+  j.status = 'closed';
+  j.closedDate = new Date().toISOString();
+  saveState();
+  renderProjects();
+  render();
+}
+
+function reopenProject(jid) {
+  var j = state.jobs.find(function(x){return x.id===jid;});
+  if (!j) return;
+  j.status = 'open';
+  delete j.closedDate;
+  saveState();
+  renderProjects();
+  render();
+}
+
+function deleteProjectPermanently(jid) {
+  if (!safeConfirm('Permanently delete this closed project and ALL its entries across every week? This cannot be undone.')) return;
+  state.jobs = state.jobs.filter(function(j){return j.id!==jid;});
+  Object.keys(state.entries).forEach(function(k){if(k.indexOf(jid+'__')===0) delete state.entries[k];});
+  Object.keys(state.hours).forEach(function(k){if(k.indexOf('h__'+jid+'__')===0) delete state.hours[k];});
+  // Remove from weekJobs lists too
+  Object.keys(state.weekJobs||{}).forEach(function(wk){
+    if (Array.isArray(state.weekJobs[wk])) {
+      state.weekJobs[wk] = state.weekJobs[wk].filter(function(x){return x!==jid;});
+    }
+  });
+  saveState();
+  renderProjects();
+  render();
 }
 
 function copyText(elId,btn) {
@@ -879,7 +1193,7 @@ function exportExcel() {
 
 /* ─── CLEAR WEEK ─── */
 function clearWeek() {
-  if(!confirm('Clear all entries for this week?')) return;
+  if(!safeConfirm('Clear all entries for this week?')) return;
   var wk=weekKey(currentWeekStart);
   Object.keys(state.entries).forEach(function(k){if(k.indexOf('__'+wk+'__')>=0) delete state.entries[k];});
   Object.keys(state.hours).forEach(function(k){if(k.indexOf('__'+wk+'__')>=0) delete state.hours[k];});
@@ -1020,7 +1334,7 @@ async function ghPullNow() {
       var v = storedSettings[k];
       if(v !== undefined && v !== null && v !== '') merged[k] = v;
     });
-    state = ensureFields(json);
+    state = repairWeekJobs(ensureFields(json));
     state.settings = merged;
     saveState(); render();
     setGhStatus('Pulled successfully at '+new Date().toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'}));
@@ -1114,7 +1428,7 @@ function importBackup(input) {
       var ds=bk.exportedAt?new Date(bk.exportedAt).toLocaleString('en-NZ'):'unknown date';
       if(!confirm('Restore backup from '+ds+'?\n\nThis will replace ALL current data including settings.')) return;
       // Fully restore everything from backup — settings included
-      state = ensureFields(bk.data);
+      state = repairWeekJobs(ensureFields(bk.data));
       // If backup had no ghToken/ghRepo, preserve any currently configured ones
       // (token is never stored in GitHub pulls, but IS stored in local JSON backups)
       saveState(); render();
@@ -1139,7 +1453,7 @@ function updateLastBackupInfo() {
 /* ─── MODALS ─── */
 function openAddModal() {
   editingJobId=null;
-  document.getElementById('modalTitle').textContent='Add Job Code';
+  document.getElementById('modalTitle').textContent='Add Project';
   document.getElementById('inputCode').value='';
   document.getElementById('inputName').value='';
   document.getElementById('addModal').classList.add('open');
@@ -1167,7 +1481,7 @@ function addExistingAndClose(jid) {
 function openEditModal(jid) {
   editingJobId=jid;
   var job=state.jobs.find(function(j){return j.id===jid;});
-  document.getElementById('modalTitle').textContent='Edit Job Code';
+  document.getElementById('modalTitle').textContent='Edit Project';
   document.getElementById('inputCode').value=job.code;
   document.getElementById('inputName').value=job.name||'';
   document.getElementById('addModal').classList.add('open');
@@ -1182,11 +1496,13 @@ function saveJobCode() {
     if(j){j.code=code;j.name=name;}
   } else {
     var newId = uid();
-    state.jobs.push({id:newId,code:code,name:name});
-    // Add to current week's job list explicitly
-    addJobToCurrentWeek(newId);
+    state.jobs.push({id:newId,code:code,name:name,status:'open'});
+    // New projects never touch the current week — Projects tab is standalone.
+    // Use "+ Add Existing" on the Entry tab to bring a project into a week.
   }
   saveState(); closeModal('addModal'); render();
+  // Refresh Projects tab in case user created the project from there
+  if (typeof renderProjects === 'function') renderProjects();
 }
 function maskValue(val, prefixLen) {
   if (!val) return '(not saved)';
@@ -1215,7 +1531,7 @@ function populateSettingsForm() {
   document.getElementById('inputGhRepo').value  = state.settings.ghRepo||'';
 }
 function clearSensitive(field) {
-  if (!confirm('Clear the saved ' + (field === 'apiKey' ? 'API key' : 'GitHub token') + '?')) return;
+  if (!safeConfirm('Clear the saved ' + (field === 'apiKey' ? 'API key' : 'GitHub token') + '?')) return;
   state.settings[field] = '';
   saveState();
   populateSettingsForm();
@@ -1267,8 +1583,12 @@ function switchTab(name,btn) {
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
   document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active');});
   btn.classList.add('active'); document.getElementById('tab-'+name).classList.add('active');
-  if(name==='summary') renderSummary();
-  if(name==='hours')   renderHoursSummary();
+  if(name==='summary')  renderSummary();
+  if(name==='hours')    renderHoursSummary();
+  if(name==='projects') {
+    // Default to "All" filter highlighted
+    setProjectFilter('all', document.getElementById('filterAllBtn'));
+  }
 }
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function uid(){return Math.random().toString(36).slice(2,9);}
