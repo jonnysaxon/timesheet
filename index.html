@@ -333,7 +333,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 </div>
 
 <script>
-var APP_VERSION   = '1.0.0 (2026-04-27)';
+var APP_VERSION   = '1.0.1 (2026-05-04)';
 var STORAGE_KEY   = 'timesheet_v5';
 var PREV_KEY      = 'timesheet_v4';
 var BACKUP_WARN_DAYS = 7;
@@ -354,8 +354,39 @@ var editingJobId = null;
 function fresh()          { return {jobs:[],entries:{},hours:{},rollbacks:{},weekJobs:{},settings:{}}; }
 function ensureFields(s)  { if(!s.hours)s.hours={}; if(!s.rollbacks)s.rollbacks={}; if(!s.weekJobs)s.weekJobs={}; if(!s.settings)s.settings={}; return s; }
 
+// One-time repair: if a week has entries/hours for a job NOT listed in weekJobs[wk],
+// add that job to the list. Fixes data corrupted by earlier buggy versions.
+function repairWeekJobs(s) {
+  if(!s||!s.entries||!s.weekJobs) return s;
+  var weekRegex = /^(?:h__)?(.+?)__(\d{4}-\d{2}-\d{2})__(sat|sun|mon|tue|wed|thu|fri)$/;
+  var dataByWeek = {}; // {weekKey: Set<jobId>}
+  function collect(map) {
+    Object.keys(map||{}).forEach(function(k){
+      var m = k.match(weekRegex);
+      if(!m) return;
+      var jid=m[1], wk=m[2], val=map[k];
+      if(val===''||val===null||val===undefined) return; // ignore empty values
+      if(!dataByWeek[wk]) dataByWeek[wk]={};
+      dataByWeek[wk][jid]=true;
+    });
+  }
+  collect(s.entries);
+  collect(s.hours);
+  // For each week, ensure weekJobs[wk] contains every job that has data
+  Object.keys(dataByWeek).forEach(function(wk){
+    var existing = Array.isArray(s.weekJobs[wk]) ? s.weekJobs[wk].slice() : [];
+    var changed = false;
+    Object.keys(dataByWeek[wk]).forEach(function(jid){
+      if(!s.jobs.some(function(j){return j.id===jid;})) return; // job no longer exists
+      if(existing.indexOf(jid)<0){ existing.push(jid); changed=true; }
+    });
+    if(changed||!Array.isArray(s.weekJobs[wk])) s.weekJobs[wk]=existing;
+  });
+  return s;
+}
+
 function loadState() {
-  try { var r=JSON.parse(localStorage.getItem(STORAGE_KEY)); if(r) return ensureFields(r); } catch(e){}
+  try { var r=JSON.parse(localStorage.getItem(STORAGE_KEY)); if(r) return repairWeekJobs(ensureFields(r)); } catch(e){}
   try { var o=JSON.parse(localStorage.getItem(PREV_KEY));    if(o) return migrateV4(o);    } catch(e){}
   return fresh();
 }
