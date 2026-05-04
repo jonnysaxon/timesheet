@@ -346,7 +346,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 </div>
 
 <script>
-var APP_VERSION   = '1.0.4 (2026-05-04)';
+var APP_VERSION   = '1.0.6 (2026-05-04)';
 var STORAGE_KEY   = 'timesheet_v5';
 var PREV_KEY      = 'timesheet_v4';
 var BACKUP_WARN_DAYS = 7;
@@ -479,52 +479,56 @@ function getJobsForCurrentWeek() {
   var wk = weekKey(currentWeekStart);
   if (!state.weekJobs) state.weekJobs = {};
 
-  // Find every job that has actual data (entries OR hours) for this week.
-  // These MUST be included — never hide a job that has data.
-  var jobsWithDataThisWeek = state.jobs.filter(function(j){
+  // RULE 1: If this week has ANY entries or hours, the list is "locked".
+  // Use the explicit weekJobs list (or derive from data if no list yet).
+  var hasDataThisWeek = state.jobs.some(function(j){
     return DAYS.some(function(d){
       return (state.entries[eKey(j.id,currentWeekStart,d)]||'').trim() !== ''
           || (state.hours  [hKey(j.id,currentWeekStart,d)]||'')         !== '';
     });
-  }).map(function(j){return j.id;});
+  });
 
-  var list = state.weekJobs[wk];
+  if (hasDataThisWeek) {
+    // Locked: respect explicit list. Always include any job that has data.
+    var jobsWithData = state.jobs.filter(function(j){
+      return DAYS.some(function(d){
+        return (state.entries[eKey(j.id,currentWeekStart,d)]||'').trim() !== ''
+            || (state.hours  [hKey(j.id,currentWeekStart,d)]||'')         !== '';
+      });
+    }).map(function(j){return j.id;});
 
-  // Case 1: Explicit non-empty list exists — use it but ensure jobs with data are included
-  if (Array.isArray(list) && list.length > 0) {
-    var validList = list.filter(function(jid){ return state.jobs.some(function(j){return j.id===jid;}); });
-    var missing = jobsWithDataThisWeek.filter(function(jid){ return validList.indexOf(jid)<0; });
-    if (missing.length>0) {
-      validList = validList.concat(missing);
-      state.weekJobs[wk] = validList.slice();
-      saveState();
-    } else if (validList.length !== list.length) {
-      state.weekJobs[wk] = validList.slice();
+    var explicit = Array.isArray(state.weekJobs[wk]) ? state.weekJobs[wk] : [];
+    var validExplicit = explicit.filter(function(jid){ return state.jobs.some(function(j){return j.id===jid;}); });
+    // Append any jobs that have data but arent in the explicit list
+    var missing = jobsWithData.filter(function(jid){ return validExplicit.indexOf(jid)<0; });
+    var final = validExplicit.concat(missing);
+    if (final.length === 0) final = jobsWithData;
+    if (JSON.stringify(state.weekJobs[wk]) !== JSON.stringify(final)) {
+      state.weekJobs[wk] = final.slice();
       saveState();
     }
-    return validList;
+    return final;
   }
 
-  // Case 2: List is empty array OR doesnt exist — week has no explicit jobs yet
-  // If this week has data, use the jobs with data
-  if (jobsWithDataThisWeek.length > 0) {
-    state.weekJobs[wk] = jobsWithDataThisWeek.slice();
-    saveState();
-    return jobsWithDataThisWeek;
-  }
-
-  // No data this week, no explicit list — carry forward from immediately prior week
+  // RULE 2: No data anywhere this week — list is NOT locked.
+  // Always recompute from prior week, ignoring any cached weekJobs[wk].
+  // This gives the user a fresh copy of the prior week list to start from.
   var inherited = inheritJobsFromPriorWeek();
   if (inherited && inherited.length) {
-    state.weekJobs[wk] = inherited.slice();
-    saveState();
+    // Only update saved state if it actually changed, to avoid spurious saves
+    if (JSON.stringify(state.weekJobs[wk]) !== JSON.stringify(inherited)) {
+      state.weekJobs[wk] = inherited.slice();
+      saveState();
+    }
     return inherited;
   }
 
-  // Truly nothing — fall back to all jobs
+  // No prior week either — fall back to all jobs
   var allIds = state.jobs.map(function(j){return j.id;});
-  state.weekJobs[wk] = allIds.slice();
-  saveState();
+  if (JSON.stringify(state.weekJobs[wk]) !== JSON.stringify(allIds)) {
+    state.weekJobs[wk] = allIds.slice();
+    saveState();
+  }
   return allIds;
 }
 
