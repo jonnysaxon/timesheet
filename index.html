@@ -139,6 +139,11 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 .today-dot{width:6px;height:6px;background:var(--green);border-radius:50%;display:inline-block;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .spinner{display:inline-block;width:11px;height:11px;border:2px solid rgba(167,139,250,.3);border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;}
+.update-banner{position:fixed;top:0;left:0;right:0;background:var(--accent);color:#fff;padding:10px 14px;display:none;align-items:center;justify-content:space-between;gap:10px;z-index:300;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+.update-banner.show{display:flex;}
+.update-banner button{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.update-banner button:hover{background:rgba(255,255,255,.3);}
+.update-banner .dismiss{background:none;border:none;color:rgba(255,255,255,.7);padding:4px 8px;font-size:18px;line-height:1;}
 .sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;}
 .sync-dot.ok{background:var(--green);} .sync-dot.busy{background:var(--amber);animation:pulse .9s ease-in-out infinite;} .sync-dot.err{background:var(--red);} .sync-dot.off{background:var(--text3);}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
@@ -147,6 +152,14 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 </style>
 </head>
 <body>
+
+<div class="update-banner" id="updateBanner">
+  <span>&#8635; New version available</span>
+  <div style="display:flex;gap:6px;align-items:center">
+    <button onclick="applyUpdate()">Update Now</button>
+    <button class="dismiss" onclick="document.getElementById('updateBanner').classList.remove('show')" title="Dismiss">&times;</button>
+  </div>
+</div>
 
 <div class="header">
   <div class="header-title">&#9201;</div>
@@ -333,7 +346,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 </div>
 
 <script>
-var APP_VERSION   = '1.0.2 (2026-05-04)';
+var APP_VERSION   = '1.0.3 (2026-05-04)';
 var STORAGE_KEY   = 'timesheet_v5';
 var PREV_KEY      = 'timesheet_v4';
 var BACKUP_WARN_DAYS = 7;
@@ -1294,6 +1307,54 @@ function toggleDebug() {
   var showing = p.style.display !== 'none';
   p.style.display = showing ? 'none' : 'block';
   if (!showing) refreshDebug();
+}
+
+// Service worker registration with update detection
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(function(reg) {
+    // Check for updates every time app loads, and every 5 minutes thereafter
+    function checkForVersionUpdate() {
+      fetch('version.txt?t='+Date.now(), {cache:'no-store'})
+        .then(function(r){ return r.ok ? r.text() : null; })
+        .then(function(latestVersion) {
+          if (!latestVersion) return;
+          var clean = latestVersion.trim();
+          if (clean && clean !== APP_VERSION) {
+            // Newer version published — show banner
+            console.log('Update available: '+APP_VERSION+' -> '+clean);
+            document.getElementById('updateBanner').classList.add('show');
+          }
+        })
+        .catch(function(){});
+    }
+    // Initial check after 2s (let the app render first)
+    setTimeout(checkForVersionUpdate, 2000);
+    // Periodic checks every 5 minutes
+    setInterval(checkForVersionUpdate, 5*60*1000);
+    // Also check whenever the app regains focus
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'visible') checkForVersionUpdate();
+    });
+  }).catch(function(err) {
+    console.log('SW registration failed:', err);
+  });
+}
+
+function applyUpdate() {
+  // Tell the service worker to clear caches, then reload
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    if (window.caches) {
+      caches.keys().then(function(names) {
+        return Promise.all(names.map(function(n) { return caches.delete(n); }));
+      }).then(function() {
+        window.location.reload();
+      });
+    } else {
+      window.location.reload();
+    }
+  } else {
+    window.location.reload();
+  }
 }
 
 render();
