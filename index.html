@@ -386,7 +386,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 </div>
 
 <script>
-var APP_VERSION   = '1.2.10 (2026-05-08)';
+var APP_VERSION   = '1.2.11 (2026-05-08)';
 var STORAGE_KEY   = 'timesheet_v5';
 var PREV_KEY      = 'timesheet_v4';
 var BACKUP_WARN_DAYS = 7;
@@ -419,47 +419,58 @@ function ensureFields(s)  {
   return s;
 }
 
-// Earlier versions used toISOString().slice(0,10) for week keys. In NZ,
-// local Saturday midnight is still Friday in UTC, so stored week keys were
-// one day early. Migrate those saved keys once to true local week-start dates.
-function shiftStoredDatePlusOne(dateStr) {
+// Week keys should always be the local Saturday week start.
+// Recovery rules:
+//   - Old UTC bug stored Saturday weeks as Friday, so Friday -> next Saturday.
+//   - Correct local data is already Saturday.
+//   - A short-lived migration bug could shift data to Sun-Thu; pull it back to
+//     the previous Saturday so existing entries reappear.
+function normalizeStoredWeekDate(dateStr) {
   var p = dateStr.split('-').map(Number);
   var d = new Date(p[0], p[1]-1, p[2]);
-  d.setDate(d.getDate()+1);
+  var dow = d.getDay(); // 0=Sun ... 5=Fri, 6=Sat
+  if (dow === 5) d.setDate(d.getDate()+1);       // old UTC Friday key
+  else if (dow !== 6) d.setDate(d.getDate()-(dow+1)); // accidental Sun-Thu key
   return localDateKey(d);
+}
+function mergeUniqueIds(a,b) {
+  var out = Array.isArray(a) ? a.slice() : [];
+  (Array.isArray(b) ? b : []).forEach(function(x){ if(out.indexOf(x)<0) out.push(x); });
+  return out;
 }
 function remapDateKeyMap(map, pattern, buildKey) {
   var out = {};
   Object.keys(map||{}).forEach(function(k){
     var m = k.match(pattern);
     if(!m) { out[k]=map[k]; return; }
-    out[buildKey(m)] = map[k];
+    var nk = buildKey(m), val = map[k];
+    if ((out[nk] === undefined || out[nk] === '' || out[nk] === null) && val !== undefined) out[nk] = val;
   });
   return out;
 }
 function migrateWeekKeysToLocal(s) {
   if(!s.settings) s.settings = {};
-  if(s.settings.weekKeyMode === 'local') return s;
 
   s.entries = remapDateKeyMap(
     s.entries,
     /^(.+?)__(\d{4}-\d{2}-\d{2})__(sat|sun|mon|tue|wed|thu|fri)$/,
-    function(m){ return m[1]+'__'+shiftStoredDatePlusOne(m[2])+'__'+m[3]; }
+    function(m){ return m[1]+'__'+normalizeStoredWeekDate(m[2])+'__'+m[3]; }
   );
   s.hours = remapDateKeyMap(
     s.hours,
     /^h__(.+?)__(\d{4}-\d{2}-\d{2})__(sat|sun|mon|tue|wed|thu|fri)$/,
-    function(m){ return 'h__'+m[1]+'__'+shiftStoredDatePlusOne(m[2])+'__'+m[3]; }
+    function(m){ return 'h__'+m[1]+'__'+normalizeStoredWeekDate(m[2])+'__'+m[3]; }
   );
   s.rollbacks = remapDateKeyMap(
     s.rollbacks,
     /^rb__(.+?)__(\d{4}-\d{2}-\d{2})$/,
-    function(m){ return 'rb__'+m[1]+'__'+shiftStoredDatePlusOne(m[2]); }
+    function(m){ return 'rb__'+m[1]+'__'+normalizeStoredWeekDate(m[2]); }
   );
 
   var newWeekJobs = {};
   Object.keys(s.weekJobs||{}).forEach(function(wk){
-    newWeekJobs[shiftStoredDatePlusOne(wk)] = s.weekJobs[wk];
+    var nk = normalizeStoredWeekDate(wk);
+    newWeekJobs[nk] = mergeUniqueIds(newWeekJobs[nk], s.weekJobs[wk]);
   });
   s.weekJobs = newWeekJobs;
   s.settings.weekKeyMode = 'local';
@@ -1429,8 +1440,9 @@ async function ghPullNow() {
       var v = storedSettings[k];
       if(v !== undefined && v !== null && v !== '') merged[k] = v;
     });
-    state = repairWeekJobs(migrateWeekKeysToLocal(ensureFields(json)));
-    state.settings = merged;
+    var pulledState = ensureFields(json);
+    pulledState.settings = merged;
+    state = repairWeekJobs(migrateWeekKeysToLocal(pulledState));
     saveState(); render();
     setGhStatus('Pulled successfully at '+new Date().toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'}));
     setSyncStatus('ok','GitHub sync on');
