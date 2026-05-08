@@ -144,7 +144,10 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 .proj-status{font-family:var(--mono);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.05em;}
 .proj-status.open{color:var(--green);background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);}
 .proj-status.closed{color:var(--text3);background:var(--surface2);border:1px solid var(--border);}
-.proj-hours{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent);background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.25);padding:3px 10px;border-radius:5px;white-space:nowrap;}
+.proj-hours{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent);background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.25);padding:6px 10px;border-radius:5px;white-space:nowrap;display:flex;flex-direction:column;gap:2px;align-items:flex-end;}
+.proj-hours .sub{font-size:10px;font-weight:500;color:var(--text3);}
+.proj-hours .left.ok{color:var(--green);}
+.proj-hours .left.over{color:var(--red);}
 .proj-actions{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;}
 .empty-state .icon{font-size:32px;margin-bottom:10px;}
 .today-dot{width:6px;height:6px;background:var(--green);border-radius:50%;display:inline-block;}
@@ -255,6 +258,11 @@ body.light .job-card:hover{border-color:#b0b8d8;}
     <div class="form-group">
       <label class="form-label">Description (optional)</label>
       <input class="form-input" id="inputName" placeholder="e.g. Oracle Maintenance">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Total Hours (optional)</label>
+      <input class="form-input" id="inputTotalHours" type="number" min="0" step="0.25" placeholder="e.g. 80">
+      <div class="form-hint">Used to show project hours left in the Projects tab. Leave blank if the project has no fixed hour budget.</div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('addModal')">Cancel</button>
@@ -371,7 +379,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 </div>
 
 <script>
-var APP_VERSION   = '1.2.4 (2026-05-05)';
+var APP_VERSION   = '1.2.5 (2026-05-08)';
 var STORAGE_KEY   = 'timesheet_v5';
 var PREV_KEY      = 'timesheet_v4';
 var BACKUP_WARN_DAYS = 7;
@@ -536,6 +544,15 @@ function jobTotalHours(jid) {
     }
   });
   return sum;
+}
+function projectTotalHours(job) {
+  var v = parseFloat(job.totalHours);
+  return isNaN(v) || v <= 0 ? null : v;
+}
+function projectHoursLeft(job) {
+  var total = projectTotalHours(job);
+  if (total === null) return null;
+  return total - jobTotalHours(job.id);
 }
 
 /* Open project filter — closed projects are excluded from being added to weeks */
@@ -911,6 +928,12 @@ function fmtH(h) {
   if(Number.isInteger(h)) return String(h);
   return String(parseFloat(h.toFixed(2)));
 }
+function fmtProjectH(h) {
+  h = parseFloat(h);
+  if(isNaN(h)) return '-';
+  if(h===0) return '0';
+  return fmtH(h);
+}
 
 function toggleCard(id) { document.getElementById('card-'+id).classList.toggle('open'); }
 
@@ -1042,7 +1065,17 @@ function renderProjects() {
       var d = new Date(j.closedDate);
       closedInfo = '<span>Closed '+d.toLocaleDateString('en-NZ',{day:'2-digit',month:'short',year:'numeric'})+'</span>';
     }
-    var totalLabel = total>0 ? fmtH(total)+'h' : '0h';
+    var budget = projectTotalHours(j);
+    var left = projectHoursLeft(j);
+    var totalLabel = total>0 ? fmtH(total)+'h used' : '0h used';
+    var hoursHtml = '<div class="proj-hours"><span>'+totalLabel+'</span>';
+    if (budget !== null) {
+      hoursHtml += '<span class="sub">'+fmtProjectH(budget)+'h total</span>'
+        + '<span class="sub left '+(left < 0 ? 'over' : 'ok')+'">'+fmtProjectH(Math.abs(left))+'h '+(left < 0 ? 'over' : 'left')+'</span>';
+    } else {
+      hoursHtml += '<span class="sub">no total set</span>';
+    }
+    hoursHtml += '</div>';
     var actions = open
       ? '<button class="btn btn-secondary" style="padding:5px 10px;font-size:11px" onclick="openEditModal(\''+j.id+'\')">Edit</button>'
         +'<button class="btn btn-secondary" style="padding:5px 10px;font-size:11px" onclick="closeProject(\''+j.id+'\')">Close</button>'
@@ -1057,7 +1090,7 @@ function renderProjects() {
       +(j.name?'<div style="font-size:12px;color:var(--text2)">'+esc(j.name)+'</div>':'')
       +(closedInfo?'<div class="proj-meta">'+closedInfo+'</div>':'')
       +'</div>'
-      +'<div class="proj-hours">'+totalLabel+'</div>'
+      +hoursHtml
       +'<div class="proj-actions">'+actions+'</div>'
       +'</div>';
   }).join('');
@@ -1456,6 +1489,7 @@ function openAddModal() {
   document.getElementById('modalTitle').textContent='Add Project';
   document.getElementById('inputCode').value='';
   document.getElementById('inputName').value='';
+  document.getElementById('inputTotalHours').value='';
   document.getElementById('addModal').classList.add('open');
   setTimeout(function(){document.getElementById('inputCode').focus();},100);
 }
@@ -1484,19 +1518,29 @@ function openEditModal(jid) {
   document.getElementById('modalTitle').textContent='Edit Project';
   document.getElementById('inputCode').value=job.code;
   document.getElementById('inputName').value=job.name||'';
+  document.getElementById('inputTotalHours').value=projectTotalHours(job)===null?'':projectTotalHours(job);
   document.getElementById('addModal').classList.add('open');
 }
 
 function saveJobCode() {
   var code=document.getElementById('inputCode').value.trim();
   var name=document.getElementById('inputName').value.trim();
+  var totalHours=document.getElementById('inputTotalHours').value.trim();
+  var parsedTotal=parseFloat(totalHours);
   if(!code){document.getElementById('inputCode').focus();return;}
+  if(totalHours && (isNaN(parsedTotal) || parsedTotal < 0)){document.getElementById('inputTotalHours').focus();return;}
   if(editingJobId){
     var j=state.jobs.find(function(j){return j.id===editingJobId;});
-    if(j){j.code=code;j.name=name;}
+    if(j){
+      j.code=code;
+      j.name=name;
+      if(totalHours) j.totalHours=String(parsedTotal); else delete j.totalHours;
+    }
   } else {
     var newId = uid();
-    state.jobs.push({id:newId,code:code,name:name,status:'open'});
+    var job={id:newId,code:code,name:name,status:'open'};
+    if(totalHours) job.totalHours=String(parsedTotal);
+    state.jobs.push(job);
     // New projects never touch the current week — Projects tab is standalone.
     // Use "+ Add Existing" on the Entry tab to bring a project into a week.
   }
