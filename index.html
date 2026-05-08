@@ -138,17 +138,21 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 .notice-backup button.dismiss{border-color:var(--border);color:var(--text3);}
 .notice-backup button.dismiss:hover{border-color:var(--text3);color:var(--text2);}
 .empty-state{text-align:center;padding:48px 24px;color:var(--text3);font-size:13px;}
-.proj-row{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
-.proj-info{flex:1;min-width:120px;display:flex;flex-direction:column;gap:4px;}
-.proj-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--text3);}
-.proj-status{font-family:var(--mono);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.05em;}
+.proj-row{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"main hours" "meta actions";column-gap:8px;row-gap:6px;align-items:start;}
+.proj-main{grid-area:main;min-width:0;display:flex;align-items:flex-start;gap:6px;flex-wrap:wrap;}
+.proj-code{font-family:var(--mono);font-size:12px;font-weight:600;line-height:1.25;color:var(--accent);background:rgba(79,142,247,.12);border:1px solid rgba(79,142,247,.25);padding:3px 8px;border-radius:5px;max-width:100%;overflow-wrap:anywhere;word-break:break-word;}
+.proj-status{font-family:var(--mono);font-size:9px;font-weight:600;line-height:1.25;padding:2px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:.05em;flex-shrink:0;margin-top:1px;}
 .proj-status.open{color:var(--green);background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);}
 .proj-status.closed{color:var(--text3);background:var(--surface2);border:1px solid var(--border);}
-.proj-hours{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent);background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.25);padding:6px 10px;border-radius:5px;white-space:nowrap;display:flex;flex-direction:column;gap:2px;align-items:flex-end;}
-.proj-hours .sub{font-size:10px;font-weight:500;color:var(--text3);}
+.proj-meta{grid-area:meta;min-width:0;display:flex;flex-direction:column;gap:2px;font-family:var(--mono);font-size:9.5px;color:var(--text3);line-height:1.25;}
+.proj-desc{font-family:var(--sans);font-size:11px;color:var(--text2);line-height:1.25;overflow-wrap:anywhere;}
+.proj-hours{grid-area:hours;font-family:var(--mono);font-size:11px;font-weight:600;line-height:1.15;color:var(--accent);background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.25);padding:4px 7px;border-radius:6px;white-space:nowrap;display:flex;flex-direction:column;gap:1px;align-items:flex-end;min-width:96px;}
+.proj-hours .sub{font-size:8.5px;font-weight:500;color:var(--text3);line-height:1.15;}
 .proj-hours .left.ok{color:var(--green);}
 .proj-hours .left.over{color:var(--red);}
-.proj-actions{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;}
+.proj-actions{grid-area:actions;display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;align-self:end;}
+.proj-actions .btn{padding:4px 8px;font-size:10px;border-radius:6px;line-height:1.2;}
+@media(max-width:640px){.proj-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"main hours" "meta actions";padding:9px 10px;column-gap:7px;row-gap:5px;}.proj-hours{min-width:92px}.proj-code{font-size:11.5px}.proj-desc{font-size:10.5px}.proj-actions .btn{padding:4px 8px;}}
 .empty-state .icon{font-size:32px;margin-bottom:10px;}
 .today-dot{width:6px;height:6px;background:var(--green);border-radius:50%;display:inline-block;}
 @keyframes spin{to{transform:rotate(360deg);}}
@@ -379,7 +383,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 </div>
 
 <script>
-var APP_VERSION   = '1.2.5 (2026-05-08)';
+var APP_VERSION   = '1.2.7 (2026-05-08)';
 var STORAGE_KEY   = 'timesheet_v5';
 var PREV_KEY      = 'timesheet_v4';
 var BACKUP_WARN_DAYS = 7;
@@ -1077,20 +1081,20 @@ function renderProjects() {
     }
     hoursHtml += '</div>';
     var actions = open
-      ? '<button class="btn btn-secondary" style="padding:5px 10px;font-size:11px" onclick="openEditModal(\''+j.id+'\')">Edit</button>'
-        +'<button class="btn btn-secondary" style="padding:5px 10px;font-size:11px" onclick="closeProject(\''+j.id+'\')">Close</button>'
-      : '<button class="btn btn-secondary" style="padding:5px 10px;font-size:11px" onclick="reopenProject(\''+j.id+'\')">Reopen</button>'
-        +'<button class="btn btn-danger" style="padding:5px 10px;font-size:11px" onclick="deleteProjectPermanently(\''+j.id+'\')">Delete</button>';
+      ? '<button class="btn btn-secondary" onclick="openEditModal(\''+j.id+'\')">Edit</button>'
+        +'<button class="btn btn-secondary" onclick="closeProject(\''+j.id+'\')">Close</button>'
+      : '<button class="btn btn-secondary" onclick="reopenProject(\''+j.id+'\')">Reopen</button>'
+        +'<button class="btn btn-danger" onclick="deleteProjectPermanently(\''+j.id+'\')">Delete</button>';
     return '<div class="proj-row">'
-      +'<div class="proj-info">'
-      +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
-        +'<span class="job-code-badge">'+esc(j.code)+'</span>'
+      +'<div class="proj-main">'
+        +'<span class="proj-code">'+esc(j.code)+'</span>'
         +'<span class="proj-status '+(open?'open':'closed')+'">'+(open?'Open':'Closed')+'</span>'
       +'</div>'
-      +(j.name?'<div style="font-size:12px;color:var(--text2)">'+esc(j.name)+'</div>':'')
-      +(closedInfo?'<div class="proj-meta">'+closedInfo+'</div>':'')
-      +'</div>'
       +hoursHtml
+      +'<div class="proj-meta">'
+        +(j.name?'<div class="proj-desc">'+esc(j.name)+'</div>':'')
+        +(closedInfo?closedInfo:'')
+      +'</div>'
       +'<div class="proj-actions">'+actions+'</div>'
       +'</div>';
   }).join('');
