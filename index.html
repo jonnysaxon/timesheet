@@ -383,7 +383,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 </div>
 
 <script>
-var APP_VERSION   = '1.2.7 (2026-05-08)';
+var APP_VERSION   = '1.2.8 (2026-05-08)';
 var STORAGE_KEY   = 'timesheet_v5';
 var PREV_KEY      = 'timesheet_v4';
 var BACKUP_WARN_DAYS = 7;
@@ -413,6 +413,53 @@ function ensureFields(s)  {
   }
   // Clean up any stale weekExplicit flag from earlier buggy versions
   if (s.weekExplicit) delete s.weekExplicit;
+  return s;
+}
+
+// Earlier versions used toISOString().slice(0,10) for week keys. In NZ,
+// local Saturday midnight is still Friday in UTC, so stored week keys were
+// one day early. Migrate those saved keys once to true local week-start dates.
+function shiftStoredDatePlusOne(dateStr) {
+  var p = dateStr.split('-').map(Number);
+  var d = new Date(p[0], p[1]-1, p[2]);
+  d.setDate(d.getDate()+1);
+  return localDateKey(d);
+}
+function remapDateKeyMap(map, pattern, buildKey) {
+  var out = {};
+  Object.keys(map||{}).forEach(function(k){
+    var m = k.match(pattern);
+    if(!m) { out[k]=map[k]; return; }
+    out[buildKey(m)] = map[k];
+  });
+  return out;
+}
+function migrateWeekKeysToLocal(s) {
+  if(!s.settings) s.settings = {};
+  if(s.settings.weekKeyMode === 'local') return s;
+
+  s.entries = remapDateKeyMap(
+    s.entries,
+    /^(.+?)__(\d{4}-\d{2}-\d{2})__(sat|sun|mon|tue|wed|thu|fri)$/,
+    function(m){ return m[1]+'__'+shiftStoredDatePlusOne(m[2])+'__'+m[3]; }
+  );
+  s.hours = remapDateKeyMap(
+    s.hours,
+    /^h__(.+?)__(\d{4}-\d{2}-\d{2})__(sat|sun|mon|tue|wed|thu|fri)$/,
+    function(m){ return 'h__'+m[1]+'__'+shiftStoredDatePlusOne(m[2])+'__'+m[3]; }
+  );
+  s.rollbacks = remapDateKeyMap(
+    s.rollbacks,
+    /^rb__(.+?)__(\d{4}-\d{2}-\d{2})$/,
+    function(m){ return 'rb__'+m[1]+'__'+shiftStoredDatePlusOne(m[2]); }
+  );
+
+  var newWeekJobs = {};
+  Object.keys(s.weekJobs||{}).forEach(function(wk){
+    newWeekJobs[shiftStoredDatePlusOne(wk)] = s.weekJobs[wk];
+  });
+  s.weekJobs = newWeekJobs;
+  s.settings.weekKeyMode = 'local';
   return s;
 }
 
@@ -455,9 +502,11 @@ function repairWeekJobs(s) {
 }
 
 function loadState() {
-  try { var r=JSON.parse(localStorage.getItem(STORAGE_KEY)); if(r) return repairWeekJobs(ensureFields(r)); } catch(e){}
-  try { var o=JSON.parse(localStorage.getItem(PREV_KEY));    if(o) return migrateV4(o);    } catch(e){}
-  return fresh();
+  try { var r=JSON.parse(localStorage.getItem(STORAGE_KEY)); if(r) return repairWeekJobs(migrateWeekKeysToLocal(ensureFields(r))); } catch(e){}
+  try { var o=JSON.parse(localStorage.getItem(PREV_KEY));    if(o) return repairWeekJobs(migrateWeekKeysToLocal(migrateV4(o)));    } catch(e){}
+  var s = fresh();
+  s.settings.weekKeyMode = 'local';
+  return s;
 }
 
 // v4 used numeric suffix 0-6 (0=Sat…6=Fri) → replace with day name
@@ -488,7 +537,11 @@ function getWeekStart(d) {
   dt.setHours(0,0,0,0); return dt;
 }
 function getWeekDates(ws) { return DAYS.map(function(_,i){ var d=new Date(ws); d.setDate(d.getDate()+i); return d; }); }
-function weekKey(ws)      { return ws.toISOString().slice(0,10); }
+function localDateKey(d)  {
+  var y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+function weekKey(ws)      { return localDateKey(ws); }
 function formatDate(d)    { return d.toLocaleDateString('en-NZ',{day:'2-digit',month:'short'}); }
 function isToday(d)       { var t=new Date(); return d.getDate()===t.getDate()&&d.getMonth()===t.getMonth()&&d.getFullYear()===t.getFullYear(); }
 function changeWeek(dir)  { currentWeekStart=new Date(currentWeekStart); currentWeekStart.setDate(currentWeekStart.getDate()+dir*7); clearDraft(); render(); }
@@ -1371,7 +1424,7 @@ async function ghPullNow() {
       var v = storedSettings[k];
       if(v !== undefined && v !== null && v !== '') merged[k] = v;
     });
-    state = repairWeekJobs(ensureFields(json));
+    state = repairWeekJobs(migrateWeekKeysToLocal(ensureFields(json)));
     state.settings = merged;
     saveState(); render();
     setGhStatus('Pulled successfully at '+new Date().toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'}));
@@ -1465,7 +1518,7 @@ function importBackup(input) {
       var ds=bk.exportedAt?new Date(bk.exportedAt).toLocaleString('en-NZ'):'unknown date';
       if(!confirm('Restore backup from '+ds+'?\n\nThis will replace ALL current data including settings.')) return;
       // Fully restore everything from backup — settings included
-      state = repairWeekJobs(ensureFields(bk.data));
+      state = repairWeekJobs(migrateWeekKeysToLocal(ensureFields(bk.data)));
       // If backup had no ghToken/ghRepo, preserve any currently configured ones
       // (token is never stored in GitHub pulls, but IS stored in local JSON backups)
       saveState(); render();
