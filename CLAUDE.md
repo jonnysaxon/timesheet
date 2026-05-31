@@ -18,15 +18,16 @@ the user explicitly asks. Keep the "open the file and it runs" property intact.
 | `index.html` | The whole app: markup + `<style>` + `<script>`. Edit here. |
 | `sw.js` | Service worker. Pre-caches the app shell at install; network-first for navigation, cache-first for other assets. |
 | `timesheet.html` | Legacy/alternate copy of the app. Usually **not** the file to edit — confirm with the user before touching it. |
-| `version.txt` | Plain-text version marker (legacy). |
+| `version.txt` | Plain-text version marker the in-app update checker fetches. Keep it equal to `APP_VERSION`. |
 | `README.md` | Human-facing docs. |
 | `IMPROVEMENTS.md` | Backlog of suggested improvements, with ✅ Done markers. |
 | `.gitignore` | Ignores OS/editor cruft and local data exports. |
 
 When changing app behavior, edit `index.html`. The authoritative version string
-is the `APP_VERSION` constant near the top of the script block. When you change
-cached assets, bump `CACHE_VERSION` in `sw.js` in step with `APP_VERSION` so the
-pre-cached copy is refreshed rather than serving stale.
+is the `APP_VERSION` constant near the top of the script block — on any code
+change, bump it **and** set `version.txt` to the same value (and bump
+`CACHE_VERSION` in `sw.js` if cached assets changed). See Safety / gotchas for
+why all three matter.
 
 ## How to run
 
@@ -108,8 +109,15 @@ state = { jobs, entries, hours, rollbacks, weekJobs, settings }
   user's `localStorage`.
 - **Preserve backward compatibility** of `localStorage` data and the composite
   key formats — real user data depends on it. Add migrations, don't break loads.
-- After editing, bump `APP_VERSION` (and `CACHE_VERSION` in `sw.js` if cached
-  assets changed) so the update banner / cache busting behaves.
+- **IMPORTANT — keep three version markers in sync on any code change:**
+  1. `APP_VERSION` constant in `index.html` (authoritative version string)
+  2. `version.txt` (the update checker fetches this and compares it against
+     `APP_VERSION`; if they don't match, the "New version available" banner
+     logic misbehaves — they MUST be set to the same value)
+  3. `CACHE_VERSION` in `sw.js` — bump it too **if cached assets changed**, so
+     the pre-cached copy is refreshed rather than served stale.
+  Bumping the version is what drives the update banner / cache busting, so do it
+  on every user-facing change.
 - There is no committed test suite; verify changes by loading the app in a
   browser and exercising the affected tab (Entry / Summary / Hours / Projects)
   plus a week-navigation round-trip. For larger changes, a headless browser
