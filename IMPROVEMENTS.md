@@ -17,10 +17,20 @@ There's no `.gitignore` today, so OS/editor cruft (`.DS_Store`, `.vscode/`,
 `*.swp`) can be committed by accident.
 - **Action:** add a small `.gitignore` covering common editor/OS files.
 
-### 3. Add a `LICENSE`
-No license file is present, so reuse terms are undefined.
-- **Action:** add a `LICENSE` (e.g. MIT for permissive, or keep it private/
-  all-rights-reserved) to make intent explicit.
+### 3. Consider a `LICENSE` (optional)
+This is **optional** and only worth doing if you want to allow others to reuse
+the code — for a purely personal tool, leaving it off is a perfectly reasonable
+default.
+
+Why it comes up: the repo is public but has no `LICENSE` file. Under default
+copyright law, "no license" does **not** mean "free to use" — it means the
+opposite: **all rights reserved**. Anyone can *view* the code, but no one may
+legally copy, modify, or fork it without explicit permission.
+
+- If you want that (all rights reserved): do nothing — the current state already
+  achieves it.
+- If you want others to be able to reuse it: add a `LICENSE` (e.g. MIT for
+  permissive use) to grant that permission explicitly.
 
 ### 4. Make the AI model configurable
 The Anthropic call hard-codes the model in `expandWithAI()`
