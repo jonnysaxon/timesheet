@@ -22,15 +22,19 @@ No build step, no server, no account. Open `index.html` and start typing.
   project, ready to email.
 - **Hours tab** — a per-project × per-day hours grid with row/column totals.
 - **AI entry expansion** *(optional)* — turn rough day notes into polished,
-  professional timesheet comments using the Anthropic API. Each expansion can be
-  rolled back.
+  professional timesheet comments using the Anthropic API. The model is
+  configurable in Settings (defaults to a current Claude Sonnet). Each expansion
+  can be rolled back.
 - **Email & Excel export** — email a formatted weekly summary, or download the
   week as an `.xlsx` spreadsheet (via SheetJS).
 - **GitHub sync** *(optional)* — store your data as `timesheet-data.json` in a
-  private GitHub repo so it follows you across devices. Auto-syncs on save.
+  private GitHub repo so it follows you across devices. Auto-syncs on save, and
+  detects conflicts (if another device synced more recently, it asks whether to
+  overwrite or pull instead of silently clobbering).
 - **Backup & restore** — export/import all data as a JSON file (handy before iOS
   updates), with a built-in reminder when your last backup gets stale.
-- **Light/dark theme** and a network-first service worker that surfaces new
+- **Light/dark theme**, in-app confirmation dialogs for destructive actions, and
+  an offline-capable service worker (pre-caches the app shell) that surfaces new
   versions automatically.
 
 ---
@@ -72,6 +76,7 @@ All settings are stored **only on your device** (in `localStorage`).
 | **Anthropic API key** | Enables AI expansion. Sent only to `api.anthropic.com`. |
 | **Your email** | Pre-fills the To: field when emailing a summary. |
 | **Your role** | Gives the AI professional context (e.g. "Oracle DBA"). |
+| **AI model** | Anthropic model used for AI Expand. Blank uses the app default. |
 | **App URL** | Your hosted URL, used by the update checker. |
 | **GitHub sync** | Fine-grained PAT + `owner/repo` for cross-device sync. |
 

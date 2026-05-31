@@ -1,13 +1,33 @@
 // Timesheet Service Worker — handles caching and update detection
 // Strategy: network-first for HTML, cache-first for static assets
-// Increment CACHE_VERSION whenever you want to force a clean cache refresh
+// Bump CACHE_VERSION whenever you want to force a clean cache refresh.
+// IMPORTANT: bump this in step with APP_VERSION in index.html so a published
+// update reliably replaces the pre-cached copy instead of serving a stale one.
 
-const CACHE_VERSION = 'timesheet-v1';
+const CACHE_VERSION = 'timesheet-v2';
 const CACHE_NAME = `${CACHE_VERSION}-cache`;
 
-// Install: skip waiting so new SW activates immediately
+// App-shell assets pre-cached at install so the app is reliably available
+// offline (not just "after you've loaded it online once"). The CDN assets are
+// best-effort: if any fail to fetch at install they're skipped, and the fetch
+// handler will still cache them on first successful network load.
+const PRECACHE_LOCAL = ['./', './index.html', './sw.js', './version.txt'];
+const PRECACHE_CDN = [
+  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
+];
+
+// Install: pre-cache the app shell, then skip waiting so the new SW activates.
 self.addEventListener('install', event => {
-  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache =>
+      // Local assets must succeed; CDN assets are best-effort (ignore failures).
+      cache.addAll(PRECACHE_LOCAL).then(() =>
+        Promise.all(PRECACHE_CDN.map(u =>
+          cache.add(u).catch(() => {/* offline at install — cached on first use */})
+        ))
+      )
+    ).then(() => self.skipWaiting())
+  );
 });
 
 // Activate: claim clients immediately, delete old caches

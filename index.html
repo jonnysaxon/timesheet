@@ -169,6 +169,12 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 .sync-dot.ok{background:var(--green);} .sync-dot.busy{background:var(--amber);animation:pulse .9s ease-in-out infinite;} .sync-dot.err{background:var(--red);} .sync-dot.off{background:var(--text3);}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
 .sync-row{display:flex;align-items:center;gap:4px;font-size:11px;font-family:var(--mono);color:var(--text3);margin-top:0;}
+.panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.sensitive-display{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-family:var(--mono);font-size:13px;color:var(--text2);display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.mask-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.btn-mini{background:none;border:1px solid var(--border);color:var(--text3);border-radius:5px;padding:2px 10px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.btn-mini-danger{background:none;border:1px solid rgba(239,68,68,.3);color:var(--red);border-radius:5px;padding:2px 8px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.confirm-message{font-size:13px;color:var(--text2);line-height:1.6;white-space:pre-line;}
 #syncMsg{display:none;}
 </style>
 </head>
@@ -218,7 +224,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
   </div>
 
   <div class="tab-panel" id="tab-summary">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+    <div class="panel-header">
       <span class="section-label">Week Summary</span>
       <button class="btn btn-email" onclick="emailSummary()">&#9993; Email Summary</button>
     </div>
@@ -226,7 +232,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
   </div>
 
   <div class="tab-panel" id="tab-hours">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+    <div class="panel-header">
       <span class="section-label">Hours Summary</span>
       <button class="btn btn-secondary" id="copyHoursBtn" onclick="copyHoursSummary(this)">&#128203; Copy as Text</button>
     </div>
@@ -234,7 +240,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
   </div>
 
   <div class="tab-panel" id="tab-projects">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+    <div class="panel-header">
       <span class="section-label">Project Codes</span>
       <button class="btn btn-primary" onclick="openAddModal()">+ Add New Project</button>
     </div>
@@ -289,6 +295,18 @@ body.light .job-card:hover{border-color:#b0b8d8;}
   </div>
 </div>
 
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-title" id="confirmTitle">Are you sure?</div>
+    <div class="confirm-message" id="confirmMessage"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="confirmCancelBtn" onclick="resolveConfirm(false)">Cancel</button>
+      <button class="btn btn-danger" id="confirmOkBtn" onclick="resolveConfirm(true)">Confirm</button>
+    </div>
+  </div>
+</div>
+
 <!-- SETTINGS MODAL -->
 <div class="modal-overlay" id="settingsModal">
   <div class="modal" style="max-width:480px">
@@ -304,10 +322,10 @@ body.light .job-card:hover{border-color:#b0b8d8;}
     </div>
     <div class="form-group">
       <label class="form-label">Anthropic API Key</label>
-      <div id="apiKeyDisplay" style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-family:var(--mono);font-size:13px;color:var(--text2);display:flex;align-items:center;justify-content:space-between;gap:8px">
-        <span id="apiKeyMask" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
-        <button type="button" onclick="editSensitive('apiKey')" style="background:none;border:1px solid var(--border);color:var(--text3);border-radius:5px;padding:2px 10px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0">Change</button>
-        <button type="button" onclick="clearSensitive('apiKey')" style="background:none;border:1px solid rgba(239,68,68,.3);color:var(--red);border-radius:5px;padding:2px 8px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0">&#10005;</button>
+      <div id="apiKeyDisplay" class="sensitive-display">
+        <span id="apiKeyMask" class="mask-text"></span>
+        <button type="button" class="btn-mini" onclick="editSensitive('apiKey')">Change</button>
+        <button type="button" class="btn-mini-danger" onclick="clearSensitive('apiKey')">&#10005;</button>
       </div>
       <input class="form-input" id="inputApiKey" type="text" placeholder="Paste new API key here" autocomplete="off" style="display:none;margin-top:6px">
       <div class="form-hint">Stored only on this device. Never sent anywhere except api.anthropic.com.</div>
@@ -321,6 +339,11 @@ body.light .job-card:hover{border-color:#b0b8d8;}
       <label class="form-label">Your Role (optional)</label>
       <input class="form-input" id="inputRole" placeholder="e.g. Oracle DBA - Infrastructure">
       <div class="form-hint">Helps AI write comments in the right professional context.</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">AI Model (optional)</label>
+      <input class="form-input" id="inputAiModel" placeholder="claude-sonnet-4-20250514" autocomplete="off">
+      <div class="form-hint">Anthropic model used for AI Expand. Leave blank to use the app default.</div>
     </div>
     <div class="form-group">
       <label class="form-label">Appearance</label>
@@ -344,10 +367,10 @@ body.light .job-card:hover{border-color:#b0b8d8;}
       <div class="form-hint" style="margin-bottom:8px">Stores your data in a private GitHub repo as <code>timesheet-data.json</code>. Syncs automatically on every save. Works across any device that has this app open.</div>
       <div class="form-group" style="margin-bottom:8px">
         <label class="form-label" style="margin-bottom:4px">Personal Access Token</label>
-        <div id="ghTokenDisplay" style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-family:var(--mono);font-size:13px;color:var(--text2);display:flex;align-items:center;justify-content:space-between;gap:8px">
-          <span id="ghTokenMask" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
-          <button type="button" onclick="editSensitive('ghToken')" style="background:none;border:1px solid var(--border);color:var(--text3);border-radius:5px;padding:2px 10px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0">Change</button>
-          <button type="button" onclick="clearSensitive('ghToken')" style="background:none;border:1px solid rgba(239,68,68,.3);color:var(--red);border-radius:5px;padding:2px 8px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0">&#10005;</button>
+        <div id="ghTokenDisplay" class="sensitive-display">
+          <span id="ghTokenMask" class="mask-text"></span>
+          <button type="button" class="btn-mini" onclick="editSensitive('ghToken')">Change</button>
+          <button type="button" class="btn-mini-danger" onclick="clearSensitive('ghToken')">&#10005;</button>
         </div>
         <input class="form-input" id="inputGhToken" type="text" placeholder="Paste new token here" autocomplete="off" style="display:none;margin-top:6px">
         <div class="form-hint">Create at github.com &rarr; Settings &rarr; Developer settings &rarr; Fine-grained tokens. Scope: Contents read+write on your private repo only.</div>
@@ -386,11 +409,13 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 </div>
 
 <script>
-var APP_VERSION   = '1.2.12 (2026-05-08)';
+var APP_VERSION   = '1.3.0 (2026-05-31)';
 var STORAGE_KEY   = 'timesheet_v5';
 var PREV_KEY      = 'timesheet_v4';
 var BACKUP_WARN_DAYS = 7;
 var SNOOZE_DAYS   = 2;
+// AI model for entry expansion. Override per-device via settings.aiModel.
+var DEFAULT_AI_MODEL = 'claude-sonnet-4-20250514';
 
 // Week: Sat(idx 0) → Fri(idx 6). DAYS are the storage keys.
 var DAYS        = ['sat','sun','mon','tue','wed','thu','fri'];
@@ -543,9 +568,9 @@ function saveRollback(jid) {
 }
 function getRollback(jid)   { return (state.rollbacks&&state.rollbacks[rbKey(jid,currentWeekStart)])||null; }
 function clearRollback(jid) { if(state.rollbacks){ delete state.rollbacks[rbKey(jid,currentWeekStart)]; saveState(); } }
-function rollbackAI(jid) {
+async function rollbackAI(jid) {
   var snap=getRollback(jid); if(!snap) return;
-  if(!safeConfirm('Restore all entries to their pre-AI state?')) return;
+  if(!await appConfirm('Restore all entries to their pre-AI state?',{title:'Rollback AI',okText:'Restore',danger:false})) return;
   DAYS.forEach(function(d){ setEntry(jid,d,snap[d]||''); });
   clearRollback(jid); render();
 }
@@ -582,18 +607,28 @@ function isJobOpen(j) { return !j.status || j.status==='open'; }
 function getOpenJobs() { return state.jobs.filter(isJobOpen); }
 function getOpenJobIds() { return getOpenJobs().map(function(j){return j.id;}); }
 
-/* Sandbox-safe confirm: native confirm() silently returns false inside iframes
-   like the Claude preview, blocking destructive actions. Detect that case and
-   skip the prompt — the user already initiated the action via the button. */
-function isInRestrictedFrame() {
-  try { return window.self !== window.top; } catch(e) { return true; }
+/* In-app confirm modal: native confirm() silently returns false inside
+   sandboxed iframes (e.g. the Claude preview), which would block destructive
+   actions. This custom dialog works everywhere, so destructive actions are
+   always confirmed. Returns a Promise<boolean>; callers should await it. */
+var pendingConfirm = null; // resolver for the open confirm dialog
+function appConfirm(msg, opts) {
+  opts = opts || {};
+  var overlay = document.getElementById('confirmModal');
+  if (!overlay) return Promise.resolve(true); // markup missing — fail open
+  document.getElementById('confirmTitle').textContent = opts.title || 'Are you sure?';
+  document.getElementById('confirmMessage').textContent = msg || '';
+  var okBtn = document.getElementById('confirmOkBtn');
+  okBtn.textContent = opts.okText || 'Confirm';
+  okBtn.className = 'btn ' + (opts.danger === false ? 'btn-primary' : 'btn-danger');
+  document.getElementById('confirmCancelBtn').textContent = opts.cancelText || 'Cancel';
+  overlay.classList.add('open');
+  return new Promise(function(resolve){ pendingConfirm = resolve; });
 }
-function safeConfirm(msg) {
-  if (isInRestrictedFrame()) return true; // assume yes — user clicked the button
-  try {
-    if (typeof confirm === 'function') return confirm(msg);
-  } catch(e) {}
-  return true;
+function resolveConfirm(result) {
+  document.getElementById('confirmModal').classList.remove('open');
+  var r = pendingConfirm; pendingConfirm = null;
+  if (r) r(result);
 }
 
 /* ─── PER-WEEK JOB VISIBILITY ─── */
@@ -961,8 +996,8 @@ function fmtProjectH(h) {
 
 function toggleCard(id) { document.getElementById('card-'+id).classList.toggle('open'); }
 
-function deleteJobThisWeek(jid) {
-  if(!safeConfirm('Remove this job from the current week? Other weeks are unaffected.')) return;
+async function deleteJobThisWeek(jid) {
+  if(!await appConfirm('Remove this job from the current week? Other weeks are unaffected.',{title:'Remove job',okText:'Remove'})) return;
   DAYS.forEach(function(day){ delete state.entries[eKey(jid,currentWeekStart,day)]; delete state.hours[hKey(jid,currentWeekStart,day)]; });
   removeJobFromCurrentWeek(jid);
   saveState(); render();
@@ -1120,8 +1155,8 @@ function renderProjects() {
   }).join('');
 }
 
-function closeProject(jid) {
-  if (!safeConfirm('Close this project? It will no longer be available to add to timesheets, but past entries are kept.')) return;
+async function closeProject(jid) {
+  if (!await appConfirm('Close this project? It will no longer be available to add to timesheets, but past entries are kept.',{title:'Close project',okText:'Close',danger:false})) return;
   var j = state.jobs.find(function(x){return x.id===jid;});
   if (!j) return;
   j.status = 'closed';
@@ -1141,8 +1176,8 @@ function reopenProject(jid) {
   render();
 }
 
-function deleteProjectPermanently(jid) {
-  if (!safeConfirm('Permanently delete this closed project and ALL its entries across every week? This cannot be undone.')) return;
+async function deleteProjectPermanently(jid) {
+  if (!await appConfirm('Permanently delete this closed project and ALL its entries across every week? This cannot be undone.',{title:'Delete project',okText:'Delete'})) return;
   state.jobs = state.jobs.filter(function(j){return j.id!==jid;});
   Object.keys(state.entries).forEach(function(k){if(k.indexOf(jid+'__')===0) delete state.entries[k];});
   Object.keys(state.hours).forEach(function(k){if(k.indexOf('h__'+jid+'__')===0) delete state.hours[k];});
@@ -1180,7 +1215,7 @@ async function expandWithAI(jid) {
     var res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:(state.settings.aiModel||DEFAULT_AI_MODEL),max_tokens:1500,messages:[{role:'user',content:prompt}]})
     });
     if(!res.ok){ var er=await res.json().catch(function(){return{};}); throw new Error(er.error&&er.error.message?er.error.message:'HTTP '+res.status); }
     var data=await res.json();
@@ -1249,8 +1284,8 @@ function exportExcel() {
 }
 
 /* ─── CLEAR WEEK ─── */
-function clearWeek() {
-  if(!safeConfirm('Clear all entries for this week?')) return;
+async function clearWeek() {
+  if(!await appConfirm('Clear all entries for this week?',{title:'Clear week',okText:'Clear'})) return;
   var wk=weekKey(currentWeekStart);
   Object.keys(state.entries).forEach(function(k){if(k.indexOf('__'+wk+'__')>=0) delete state.entries[k];});
   Object.keys(state.hours).forEach(function(k){if(k.indexOf('__'+wk+'__')>=0) delete state.hours[k];});
@@ -1324,18 +1359,27 @@ function markClean(timeStr) {
   if(btn){ btn.classList.remove('dirty'); btn.innerHTML='&#10003; Synced'; }
 }
 
-async function ghPush() {
+// ghLastSha tracks the SHA our local state is based on (set on pull and after
+// each successful push). Conflict = the remote SHA has moved past ghLastSha,
+// meaning another device pushed since we last synced.
+async function ghPush(opts) {
+  opts = opts || {};
   if(!ghConfigured()) return;
   setSyncStatus('busy','Saving...');
   try {
-    // Always fetch the current SHA first — avoids conflicts when file
-    // was created manually in GitHub or pushed from another device
-    await ghFetchSha();
+    var remoteSha = await ghRemoteSha();
+    // Conflict: remote changed since our last sync, and we're not forcing.
+    // (ghLastSha null = this device hasn't synced yet, so nothing to conflict with.)
+    if(!opts.force && remoteSha && ghLastSha && remoteSha !== ghLastSha){
+      var conflict = new Error('Remote has newer changes');
+      conflict.conflict = true;
+      throw conflict;
+    }
     var payload=JSON.parse(JSON.stringify(state));
     // Repo is private — store everything so pull always restores full state
     var content=btoa(unescape(encodeURIComponent(JSON.stringify(payload,null,2))));
     var body={message:'timesheet update '+new Date().toISOString(), content:content};
-    if(ghLastSha) body.sha=ghLastSha;
+    if(remoteSha) body.sha=remoteSha;
     var res=await fetch(ghApiUrl(),{method:'PUT',headers:ghHeaders(),body:JSON.stringify(body)});
     if(!res.ok){
       var e=await res.json().catch(function(){return{};});
@@ -1345,15 +1389,17 @@ async function ghPush() {
     if(data.content&&data.content.sha) ghLastSha=data.content.sha;
     markClean(new Date().toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'}));
   } catch(err) {
-    setSyncStatus('err',err.message);
+    if(err.conflict) markDirty(); // leave local marked unsynced, don't flag an error
+    else setSyncStatus('err',err.message);
     throw err; // re-throw so ghPushNow and ghPullNow can catch it
   }
 }
 
-async function ghFetchSha() {
+// Returns the current remote SHA, or null if the file doesn't exist yet.
+async function ghRemoteSha() {
   var res=await fetch(ghApiUrl()+'?t='+Date.now(),{headers:ghHeaders()});
-  if(res.ok){ var d=await res.json(); ghLastSha=d.sha; }
-  else { ghLastSha=null; } // file doesn't exist yet — that's fine
+  if(res.ok){ var d=await res.json(); return d.sha; }
+  return null;
 }
 
 async function ghPullNow() {
@@ -1412,8 +1458,25 @@ async function ghPushNow() {
     var t=new Date().toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'});
     setGhStatus('Pushed successfully at '+t);
   } catch(err) {
-    setGhStatus('Push failed: '+err.message);
     if(btn){ btn.disabled=false; btn.innerHTML='&#8593; Sync'; }
+    if(err.conflict){
+      setGhStatus('Conflict: another device synced more recently.');
+      var overwrite = await appConfirm(
+        'This device has changes, but GitHub has newer changes from another device.\n\n'+
+        'Pull (recommended) replaces this device\'s unsynced changes with the GitHub copy.\n'+
+        'Overwrite forces your changes onto GitHub, discarding the other device\'s changes.',
+        {title:'Sync conflict', okText:'Overwrite GitHub', cancelText:'Pull instead', danger:true});
+      if(overwrite){
+        try {
+          await ghPush({force:true});
+          setGhStatus('Overwrote GitHub at '+new Date().toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'}));
+        } catch(e2){ setGhStatus('Push failed: '+e2.message); }
+      } else {
+        await ghPullNow();
+      }
+      return;
+    }
+    setGhStatus('Push failed: '+err.message);
   }
 }
 
@@ -1479,12 +1542,12 @@ function exportBackup() {
 function importBackup(input) {
   var file=input.files[0]; if(!file) return;
   var reader=new FileReader();
-  reader.onload=function(e){
+  reader.onload=async function(e){
     try {
       var bk=JSON.parse(e.target.result);
       if(!bk.data||!bk.data.jobs) throw new Error('Unrecognised backup format');
       var ds=bk.exportedAt?new Date(bk.exportedAt).toLocaleString('en-NZ'):'unknown date';
-      if(!confirm('Restore backup from '+ds+'?\n\nThis will replace ALL current data including settings.')) return;
+      if(!await appConfirm('Restore backup from '+ds+'?\n\nThis will replace ALL current data including settings.',{title:'Restore backup',okText:'Restore',danger:false})) return;
       // Fully restore everything from backup — settings included
       state = repairWeekJobs(migrateWeekKeysToLocal(ensureFields(bk.data)));
       // If backup had no ghToken/ghRepo, preserve any currently configured ones
@@ -1596,11 +1659,12 @@ function populateSettingsForm() {
   // Normal fields
   document.getElementById('inputEmail').value   = state.settings.email||'';
   document.getElementById('inputRole').value    = state.settings.role||'';
+  document.getElementById('inputAiModel').value = state.settings.aiModel||'';
   document.getElementById('inputAppUrl').value  = state.settings.appUrl||'';
   document.getElementById('inputGhRepo').value  = state.settings.ghRepo||'';
 }
-function clearSensitive(field) {
-  if (!safeConfirm('Clear the saved ' + (field === 'apiKey' ? 'API key' : 'GitHub token') + '?')) return;
+async function clearSensitive(field) {
+  if (!await appConfirm('Clear the saved ' + (field === 'apiKey' ? 'API key' : 'GitHub token') + '?',{title:'Clear secret',okText:'Clear'})) return;
   state.settings[field] = '';
   saveState();
   populateSettingsForm();
@@ -1638,6 +1702,7 @@ function saveSettings() {
   }
   state.settings.email   = document.getElementById('inputEmail').value.trim();
   state.settings.role    = document.getElementById('inputRole').value.trim();
+  state.settings.aiModel = document.getElementById('inputAiModel').value.trim();
   state.settings.appUrl  = document.getElementById('inputAppUrl').value.trim();
   state.settings.ghRepo  = document.getElementById('inputGhRepo').value.trim();
   saveState(); closeModal('settingsModal'); render(); updateSyncIndicator();
@@ -1664,7 +1729,10 @@ function uid(){return Math.random().toString(36).slice(2,9);}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 document.addEventListener('keydown',function(e){
-  if(e.key==='Escape'){closeModal('addModal');closeModal('settingsModal');}
+  if(e.key==='Escape'){
+    if(document.getElementById('confirmModal').classList.contains('open')){ resolveConfirm(false); return; }
+    closeModal('addModal');closeModal('settingsModal');
+  }
   if(e.key==='Enter'&&document.getElementById('addModal').classList.contains('open')&&document.activeElement&&document.activeElement.tagName!=='TEXTAREA') saveJobCode();
   if(e.key==='Enter'&&document.getElementById('settingsModal').classList.contains('open')&&document.activeElement&&document.activeElement.tagName!=='TEXTAREA'&&document.activeElement.tagName!=='BUTTON') saveSettings();
 });

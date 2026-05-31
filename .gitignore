@@ -1,0 +1,21 @@
+# OS files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs and temp
+*.log
+*.tmp
+
+# Local user data exports (never commit personal timesheet data)
+timesheet_backup_*.json
+timesheet-data.json

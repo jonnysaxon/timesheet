@@ -16,13 +16,17 @@ the user explicitly asks. Keep the "open the file and it runs" property intact.
 | File | Role |
 | --- | --- |
 | `index.html` | The whole app: markup + `<style>` + `<script>`. Edit here. |
-| `sw.js` | Service worker. Network-first for navigation requests. |
+| `sw.js` | Service worker. Pre-caches the app shell at install; network-first for navigation, cache-first for other assets. |
 | `timesheet.html` | Legacy/alternate copy of the app. Usually **not** the file to edit — confirm with the user before touching it. |
 | `version.txt` | Plain-text version marker (legacy). |
 | `README.md` | Human-facing docs. |
+| `IMPROVEMENTS.md` | Backlog of suggested improvements, with ✅ Done markers. |
+| `.gitignore` | Ignores OS/editor cruft and local data exports. |
 
 When changing app behavior, edit `index.html`. The authoritative version string
-is the `APP_VERSION` constant near the top of the script block.
+is the `APP_VERSION` constant near the top of the script block. When you change
+cached assets, bump `CACHE_VERSION` in `sw.js` in step with `APP_VERSION` so the
+pre-cached copy is refreshed rather than serving stale.
 
 ## How to run
 
@@ -66,13 +70,20 @@ state = { jobs, entries, hours, rollbacks, weekJobs, settings }
 
 ## External integrations (all optional, all user-keyed)
 
-- **Anthropic API** (`callAnthropicAPI`): direct browser call to
-  `api.anthropic.com` for AI entry expansion. Model is currently hard-coded
-  (`claude-3-5-sonnet-20241022`). API key comes from settings; never hard-code or
-  log it.
-- **GitHub sync** (`ghPush` / `ghPull` / `ghReq`): stores `state` as
-  `timesheet-data.json` via the GitHub Contents API. Last-write-wins.
-- **SheetJS (xlsx)**: loaded from CDN for Excel export.
+- **Anthropic API** (`expandWithAI`): direct browser call to `api.anthropic.com`
+  for AI entry expansion. The model comes from `state.settings.aiModel` and falls
+  back to the `DEFAULT_AI_MODEL` constant near the top of the script
+  (currently `claude-sonnet-4-20250514`) — don't re-hard-code it inline. API key
+  comes from settings; never hard-code or log it.
+- **GitHub sync** (`ghPush` / `ghPullNow`): stores `state` as
+  `timesheet-data.json` via the GitHub Contents API. `ghPush()` does a
+  SHA-based conflict check — it compares the remote SHA against `ghLastSha` (the
+  SHA local state is based on) and throws a conflict instead of clobbering when
+  the remote has moved; `ghPushNow()` then asks the user to overwrite or pull.
+  Pass `ghPush({force:true})` to skip the check. Still effectively last-write-wins
+  *after* the user's explicit choice (no field-level merge).
+- **SheetJS (xlsx)**: loaded from CDN for Excel export, and pre-cached
+  best-effort by the service worker.
 
 ## Conventions
 
@@ -81,8 +92,15 @@ state = { jobs, entries, hours, rollbacks, weekJobs, settings }
   consistent with its neighbors rather than modernizing surrounding code.
 - Inline event handlers (`onclick="..."`) are the established pattern.
 - Keep CSS in the single `<style>` block; theming uses CSS custom properties
-  with a `body.light` override — reuse the existing `--vars`.
-- Use `safeConfirm()` instead of raw `confirm()` (it handles sandboxed iframes).
+  with a `body.light` override — reuse the existing `--vars`. Prefer the shared
+  utility classes (`.panel-header`, `.sensitive-display`, `.mask-text`,
+  `.btn-mini`, `.btn-mini-danger`, `.confirm-message`) over new inline styles.
+- Use `appConfirm(msg, opts)` instead of raw `confirm()` for destructive actions.
+  It returns a `Promise<boolean>` (so the caller must be `async` and `await` it)
+  and drives the in-app `#confirmModal`, which works inside sandboxed iframes
+  where native `confirm()` does not. `opts` supports `title`, `okText`,
+  `cancelText`, and `danger` (set `danger:false` for non-destructive blue
+  confirms). The old synchronous `safeConfirm()` has been removed.
 
 ## Safety / gotchas
 
@@ -90,10 +108,13 @@ state = { jobs, entries, hours, rollbacks, weekJobs, settings }
   user's `localStorage`.
 - **Preserve backward compatibility** of `localStorage` data and the composite
   key formats — real user data depends on it. Add migrations, don't break loads.
-- After editing, bump `APP_VERSION` so the update banner / cache busting behaves.
-- There are no automated tests; verify changes by loading the app in a browser
-  and exercising the affected tab (Entry / Summary / Hours / Projects) plus a
-  week-navigation round-trip.
+- After editing, bump `APP_VERSION` (and `CACHE_VERSION` in `sw.js` if cached
+  assets changed) so the update banner / cache busting behaves.
+- There is no committed test suite; verify changes by loading the app in a
+  browser and exercising the affected tab (Entry / Summary / Hours / Projects)
+  plus a week-navigation round-trip. For larger changes, a headless browser
+  (e.g. Puppeteer) driving the global functions on `index.html` works well —
+  that's how the v1.3.0 changes were verified.
 
 ## Git / workflow
 
