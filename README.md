@@ -133,25 +133,10 @@ features require an HTTPS (or localhost) origin.
 
 ## Suggested improvements
 
-These came up while documenting the project — none are blocking, but they'd make
-it more robust:
-
-1. **Consolidate the HTML files.** `index.html` and `timesheet.html` are two
-   copies of the app. Keep one as the entry point and delete or clearly archive
-   the other to avoid edits drifting between them.
-2. **Add a `manifest.json` + icons.** The app behaves like a PWA but there's no
-   web app manifest, so "Add to Home Screen" uses default naming/icons.
-3. **Make the AI model configurable / current.** The Anthropic call hard-codes
-   `claude-3-5-sonnet-20241022`. Expose it as a setting (or bump to a current
-   model) so it's easy to update.
-4. **Cache static assets in the service worker.** It currently only does
-   network-first navigation, so offline use depends on the browser HTTP cache.
-   Pre-caching `index.html`/`sw.js` would make offline behavior deterministic.
-5. **Sync conflict handling.** GitHub push/pull is last-write-wins. A timestamp
-   or merge check would prevent one device silently overwriting another.
-6. **Add a `LICENSE`** to clarify reuse terms.
-7. **Add a `.gitignore`** (e.g. for `.DS_Store`, editor folders) — there isn't
-   one today.
+A prioritized list of potential improvements (consolidating the duplicate HTML
+files, adding a web app manifest, configurable AI model, service-worker
+pre-caching, sync conflict handling, `LICENSE`, `.gitignore`, and more) lives in
+[`IMPROVEMENTS.md`](IMPROVEMENTS.md).
 
 ---
 
