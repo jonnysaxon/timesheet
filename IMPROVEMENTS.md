@@ -47,19 +47,87 @@ The app behaves like a PWA (service worker, "Add to Home Screen") but ships no
   `index.html`. Provide at least 192px and 512px icons.
 
 ### 6. Pre-cache static assets in the service worker
-`sw.js` is network-first for navigation only; offline use depends on the
-browser's HTTP cache for `index.html` and CDN assets.
-- **Action:** pre-cache `index.html`, `sw.js`, and the CDN scripts/fonts during
-  the service worker `install` step so offline behavior is deterministic.
-- **Note:** the SheetJS and IBM Plex font dependencies load from CDNs, so true
-  offline support means caching (or vendoring) those too.
+
+**What this is about.** A "service worker" (`sw.js`) is a small script the
+browser keeps running in the background. Its main job here is to let the app
+keep working when you have no internet — for example, opening the timesheet on
+a phone in airplane mode. To do that, it needs a saved copy ("cache") of the
+files the app is built from.
+
+**The current situation.** Right now `sw.js` only deliberately saves a copy of
+the page *after* you've successfully loaded it online (this is the "network
+first" approach — try the internet, fall back to a saved copy). It does not
+proactively save everything up front. It also doesn't control the two files
+loaded from external servers (CDNs): the **SheetJS** library (used for Excel
+export) and the **IBM Plex fonts**. Those rely on the browser's own ordinary
+cache, which the browser can clear at any time.
+
+**What "fixing" it means.** Change the service worker so that the first time the
+app runs, it explicitly downloads and stores `index.html`, `sw.js`, and ideally
+the CDN files too — so the full app is guaranteed to be available offline.
+
+**Benefits of doing it:**
+- Reliable offline use: the app opens and works even with no connection, every
+  time, not just "usually."
+- Faster startup, since files load from local storage instead of the network.
+- Excel export and correct fonts keep working offline (only if the CDN files are
+  cached or bundled into the repo).
+
+**Disadvantages / costs:**
+- More complexity in `sw.js`, and a new thing to get wrong: if you cache files
+  but forget to refresh the cache when you publish a new version, users can get
+  **stuck on an old version**. (The app already has an update banner and
+  `APP_VERSION` check to mitigate this, but caching makes that machinery more
+  important to get right.)
+- Caching the CDN files means either trusting the cross-origin response or
+  **vendoring** them (copying SheetJS and the fonts into the repo), which adds
+  files to maintain and update.
+- For everyday use on a device that's usually online, the practical benefit is
+  small — this mostly matters if genuine offline use is a real requirement.
+
+**Bottom line:** worth doing only if reliable offline use actually matters to
+you. If the app is essentially always used online, the current behavior is fine.
 
 ### 7. Surface a non-blocking confirm in sandboxed frames
-`safeConfirm()` auto-returns `true` inside iframes (e.g. the Claude preview) so
-destructive actions aren't silently blocked — but that means **no** confirmation
-in those contexts.
-- **Action:** consider a lightweight in-app confirm modal for destructive
-  actions (Clear Week, Delete Project) instead of relying on native `confirm()`.
+
+**What this is about.** Several destructive actions (Clear Week, Delete Project,
+Rollback AI) ask "Are you sure?" before proceeding. They use a helper called
+`safeConfirm()`, which normally shows the browser's built-in `confirm()` pop-up.
+
+**The current situation.** The browser's native `confirm()` pop-up doesn't work
+inside a "sandboxed iframe" — for example, when the app is embedded in a preview
+window. In that case `confirm()` silently does nothing and reports "cancelled,"
+which would block the user from ever completing the action. To avoid that,
+`safeConfirm()` detects this situation and just **assumes "yes"** — it skips the
+question entirely and proceeds. The trade-off: in those embedded contexts there
+is **no confirmation at all**, so an accidental tap on Delete goes straight
+through with no safety net.
+
+**What "fixing" it means.** Replace the native pop-up with a small confirmation
+dialog built into the app itself (using the same modal style the app already
+uses for Settings and Add Project). A custom dialog works everywhere — including
+sandboxed iframes — so you get a real "Are you sure?" in every context.
+
+**Benefits of doing it:**
+- Consistent safety: destructive actions are always confirmed, even in embedded
+  previews, removing the "accidental delete with no warning" gap.
+- Visual consistency: the confirm dialog matches the app's look instead of the
+  browser's plain grey system pop-up.
+- More control: you can word the warning clearly and style dangerous buttons in
+  red.
+
+**Disadvantages / costs:**
+- More code: a custom modal needs its own markup, styling, and a small amount of
+  asynchronous wiring (the current `confirm()` is a single blocking line; a
+  custom dialog has to wait for the user's click via a callback or promise),
+  which touches every destructive action.
+- The risk it addresses is narrow: it only matters when the app runs inside a
+  sandboxed iframe. In a normal browser tab or installed on a phone, the
+  existing native `confirm()` already works fine.
+
+**Bottom line:** a nice polish and a genuine safety improvement for embedded use,
+but low priority if the app is normally used as a standalone page or installed
+app, where confirmations already work.
 
 ## Larger / design-level
 
