@@ -192,9 +192,10 @@ Much of the markup uses inline styles. Moving these into the existing
 These are existing strengths worth preserving when making changes above:
 
 - User text is escaped via `esc()` before `innerHTML` (XSS-safe rendering).
-- `localStorage` loads are defensive: `migrateV4` upgrades any pre-v5 data on
-  load, and `repairWeekJobs` normalizes `weekJobs` on every load/pull/import.
-  Keep these intact. (The old `migrateWeekKeysToLocal` was removed in v1.3.2 — it
-  only wrote a `settings.weekKeyMode` flag that nothing ever read.)
+- `localStorage` loads are defensive: `repairWeekJobs` normalizes `weekJobs` on
+  every load / GitHub pull / backup import — keep it intact. (Two dead/obsolete
+  migrations were since removed: `migrateWeekKeysToLocal` in v1.3.2, which only
+  wrote a `settings.weekKeyMode` flag nothing read; and the `timesheet_v4` →
+  `v5` `migrateV4` upgrade in v1.3.3.)
 - Secrets (API key, GitHub token) stay on-device and are masked in the UI.
 - GitHub sync warns if the target repo is public.

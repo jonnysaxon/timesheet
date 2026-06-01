@@ -419,7 +419,6 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 var APP_VERSION   = null;
 var BOOT_VERSION  = null;
 var STORAGE_KEY   = 'timesheet_v5';
-var PREV_KEY      = 'timesheet_v4';
 var BACKUP_WARN_DAYS = 7;
 var SNOOZE_DAYS   = 2;
 // AI model for entry expansion. Override per-device via settings.aiModel.
@@ -492,24 +491,7 @@ function repairWeekJobs(s) {
 
 function loadState() {
   try { var r=JSON.parse(localStorage.getItem(STORAGE_KEY)); if(r) return repairWeekJobs(ensureFields(r)); } catch(e){}
-  try { var o=JSON.parse(localStorage.getItem(PREV_KEY));    if(o) return repairWeekJobs(migrateV4(o));    } catch(e){}
   return fresh();
-}
-
-// v4 used numeric suffix 0-6 (0=Sat…6=Fri) → replace with day name
-function migrateV4(old) {
-  var s=ensureFields({jobs:old.jobs||[],entries:{},hours:{},rollbacks:{},settings:old.settings||{}});
-  Object.keys(old.entries||{}).forEach(function(k){
-    var m=k.match(/^(.+)__(\d{4}-\d{2}-\d{2})__(\d)$/);
-    if(m){ var dn=DAYS[+m[3]]; if(dn) s.entries[m[1]+'__'+m[2]+'__'+dn]=old.entries[k]; else s.entries[k]=old.entries[k]; }
-    else s.entries[k]=old.entries[k];
-  });
-  Object.keys(old.hours||{}).forEach(function(k){
-    var m=k.match(/^h__(.+)__(\d{4}-\d{2}-\d{2})__(\d)$/);
-    if(m){ var dn=DAYS[+m[3]]; if(dn) s.hours['h__'+m[1]+'__'+m[2]+'__'+dn]=old.hours[k]; else s.hours[k]=old.hours[k]; }
-    else s.hours[k]=old.hours[k];
-  });
-  return s;
 }
 
 function saveState() {

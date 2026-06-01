@@ -1,10 +1,10 @@
 // Timesheet Service Worker — handles caching and update detection
 // Strategy: network-first for HTML, cache-first for static assets
-// Bump CACHE_VERSION whenever you want to force a clean cache refresh.
-// IMPORTANT: bump this in step with APP_VERSION in index.html so a published
-// update reliably replaces the pre-cached copy instead of serving a stale one.
+// Bump CACHE_VERSION whenever cached assets change, so a published update
+// reliably replaces the pre-cached copy instead of serving a stale one.
+// (The app version itself lives only in version.txt — see CLAUDE.md.)
 
-const CACHE_VERSION = 'timesheet-v4';
+const CACHE_VERSION = 'timesheet-v5';
 const CACHE_NAME = `${CACHE_VERSION}-cache`;
 
 // App-shell assets pre-cached at install so the app is reliably available
