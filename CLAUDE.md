@@ -16,7 +16,9 @@ the user explicitly asks. Keep the "open the file and it runs" property intact.
 | File | Role |
 | --- | --- |
 | `index.html` | The whole app: markup + `<style>` + `<script>`. Edit here. |
-| `sw.js` | Service worker. Pre-caches the app shell at install; network-first for navigation, cache-first for other assets. |
+| `sw.js` | Service worker. Pre-caches the app shell (incl. `manifest.json` + icons) at install; network-first for navigation, cache-first for other assets. |
+| `manifest.json` | Web app manifest (installable PWA: name, `display:standalone`, theme/bg `#0f1117`, icon entries). |
+| `icons/` | PWA icons: `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` (180px, used by iOS), `master-icon-1024.png` (source). |
 | `timesheet.html` | Legacy/alternate copy of the app. Usually **not** the file to edit — confirm with the user before touching it. |
 | `version.txt` | **Single source of truth for the version.** Fetched at runtime to display the version and drive the update banner. The app no longer hard-codes a version string. |
 | `README.md` | Human-facing docs. |
