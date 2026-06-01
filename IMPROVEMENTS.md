@@ -7,6 +7,13 @@ Roughly ordered by effort-to-value.
 **Status:** items 2, 4, 6, 7, 8, and 9 were implemented in `v1.3.0` and are
 marked ✅ Done below. Items 1, 3, and 5 remain open.
 
+**`v1.3.1`** — versioning hardening: removed the duplicated `APP_VERSION`
+literal so `version.txt` is the single source of truth (read at runtime). This
+eliminates the class of bug where `version.txt` and the in-code version drifted
+out of sync and misfired the update banner. The service worker now serves
+`version.txt` network-first so the update signal is never stale, and update
+detection runs independently of service-worker registration.
+
 ## Quick wins
 
 ### 1. Consolidate the two HTML files

@@ -111,12 +111,22 @@ load.
 | `index.html` | The entire app — markup, CSS, and vanilla JS in one file. |
 | `sw.js` | Service worker (network-first navigation for instant updates). |
 | `timesheet.html` | An earlier/alternate single-file version (see note below). |
-| `version.txt` | Plain-text version marker. |
+| `version.txt` | **The single source of truth for the app version.** Fetched at runtime to display the version and drive the update banner. |
 | `CLAUDE.md` | Guidance for AI coding agents working in this repo. |
 
-> **Note:** the in-app version (`APP_VERSION` in `index.html`) is the source of
-> truth. `timesheet.html` and `version.txt` appear to be legacy artifacts — see
-> "Suggested improvements" below.
+### Versioning & updates
+
+`version.txt` holds the version string and is the **only** place it's authored —
+the app no longer hard-codes a version anywhere. On load the app fetches
+`version.txt` (bypassing the cache) and anchors that as the running version;
+later checks (every 5 minutes and when the tab regains focus) that see a
+different value mean a newer version was published, so the app shows a "New
+version available" banner that reloads to the latest. **To release a new
+version, just edit `version.txt`** (and bump `CACHE_VERSION` in `sw.js` if cached
+assets changed). There is no second version constant to keep in sync.
+
+> **Note:** `timesheet.html` is an earlier/alternate copy — see "Suggested
+> improvements" below.
 
 ---
 

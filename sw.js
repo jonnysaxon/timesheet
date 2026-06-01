@@ -4,7 +4,7 @@
 // IMPORTANT: bump this in step with APP_VERSION in index.html so a published
 // update reliably replaces the pre-cached copy instead of serving a stale one.
 
-const CACHE_VERSION = 'timesheet-v2';
+const CACHE_VERSION = 'timesheet-v3';
 const CACHE_NAME = `${CACHE_VERSION}-cache`;
 
 // App-shell assets pre-cached at install so the app is reliably available
@@ -48,6 +48,25 @@ self.addEventListener('fetch', event => {
   if (req.method !== 'GET') return;
 
   const url = new URL(req.url);
+
+  // version.txt is the app's update signal — it must always be fresh, never
+  // served stale from cache. Network-first with a cache fallback only so the
+  // version can still display offline.
+  if (url.pathname.endsWith('version.txt')) {
+    event.respondWith(
+      fetch(req, { cache: 'no-store' })
+        .then(res => {
+          if (res && res.status === 200) {
+            const copy = res.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(req))
+    );
+    return;
+  }
+
   const isHTML = req.mode === 'navigate' ||
                  req.headers.get('accept')?.includes('text/html') ||
                  url.pathname.endsWith('.html') ||
