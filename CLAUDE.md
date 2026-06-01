@@ -105,6 +105,13 @@ state = { jobs, entries, hours, rollbacks, weekJobs, settings }
   where native `confirm()` does not. `opts` supports `title`, `okText`,
   `cancelText`, and `danger` (set `danger:false` for non-destructive blue
   confirms). The old synchronous `safeConfirm()` has been removed.
+- **iOS safe areas:** the PWA runs standalone with
+  `apple-mobile-web-app-status-bar-style: black-translucent` + `viewport-fit=cover`,
+  so the web view extends under the status bar / Dynamic Island and home
+  indicator. The fixed/sticky chrome (`.header`, `.update-banner`, `.footer-bar`)
+  and the `.main` bottom padding compensate with `env(safe-area-inset-*)`. If you
+  add fixed elements pinned to a screen edge, pad them with the matching inset or
+  they'll render under the notch / home bar.
 
 ## Safety / gotchas
 

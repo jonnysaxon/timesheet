@@ -33,7 +33,7 @@ body.light {
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;transition:background .2s,color .2s;}
-.header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:6px;}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top));padding-left:calc(12px + env(safe-area-inset-left));padding-right:calc(12px + env(safe-area-inset-right));display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:6px;}
 .header-title{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;}
 .week-nav{display:flex;align-items:center;gap:4px;}
 .week-label{font-family:var(--mono);font-size:11px;color:var(--text2);min-width:120px;text-align:center;}
@@ -44,7 +44,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .btn-today:hover{border-color:var(--green);color:var(--green);}
 .settings-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text3);width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s;flex-shrink:0;}
 .settings-btn:hover{border-color:var(--amber);color:var(--amber);}
-.main{max-width:1100px;margin:0 auto;padding:20px 16px 90px;}
+.main{max-width:1100px;margin:0 auto;padding:20px 16px;padding-bottom:calc(90px + env(safe-area-inset-bottom));}
 .btn{font-family:var(--sans);font-size:13px;font-weight:500;padding:7px 14px;border-radius:7px;border:1px solid var(--border);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
 .btn:disabled{opacity:.4;cursor:not-allowed;}
 .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;}
@@ -136,7 +136,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 .form-hint{font-size:11px;color:var(--text3);margin-top:5px;line-height:1.5;}
 .modal-divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
 .modal-actions{display:flex;gap:8px;margin-top:20px;justify-content:flex-end;}
-.footer-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:10px 16px;display:flex;gap:8px;justify-content:flex-end;z-index:99;flex-wrap:wrap;}
+.footer-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:10px 16px;padding-bottom:calc(10px + env(safe-area-inset-bottom));padding-left:calc(16px + env(safe-area-inset-left));padding-right:calc(16px + env(safe-area-inset-right));display:flex;gap:8px;justify-content:flex-end;z-index:99;flex-wrap:wrap;}
 .notice-bar{border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 .notice-bar .notice-msg{flex:1;min-width:160px;}
 .notice-bar .notice-actions{display:flex;gap:6px;flex-shrink:0;}
@@ -169,7 +169,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 .today-dot{width:6px;height:6px;background:var(--green);border-radius:50%;display:inline-block;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .spinner{display:inline-block;width:11px;height:11px;border:2px solid rgba(167,139,250,.3);border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;}
-.update-banner{position:fixed;top:0;left:0;right:0;background:var(--accent);color:#fff;padding:10px 14px;display:none;align-items:center;justify-content:space-between;gap:10px;z-index:300;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+.update-banner{position:fixed;top:0;left:0;right:0;background:var(--accent);color:#fff;padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top));display:none;align-items:center;justify-content:space-between;gap:10px;z-index:300;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.3);}
 .update-banner.show{display:flex;}
 .update-banner button{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;}
 .update-banner button:hover{background:rgba(255,255,255,.3);}
