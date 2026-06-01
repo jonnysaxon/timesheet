@@ -137,3 +137,7 @@ state = { jobs, entries, hours, rollbacks, weekJobs, settings }
   the user explicitly requests one.
 - Keep changes minimal and scoped; this is a personal tool where data integrity
   matters more than refactors.
+- **One PR per logical change, always branched off `main`.** Do not stack PRs on
+  top of another open PR's branch — if a base branch is deleted on merge, the
+  stacked PR is orphaned (auto-closed) and can't be retargeted. Collapse related
+  work into a single PR rather than chaining dependent ones.
