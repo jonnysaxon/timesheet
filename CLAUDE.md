@@ -47,9 +47,11 @@ All state lives in a single `state` object persisted to `localStorage`:
 state = { jobs, entries, hours, rollbacks, weekJobs, settings }
 ```
 
-- **Storage key:** `timesheet_v5` (with `loadState()` upgrading any pre-v5 data
-  via `migrateV4`, and running `repairWeekJobs` on every load/pull/import). Bump
-  the schema carefully and preserve these paths.
+- **Storage key:** `timesheet_v5`. `loadState()` reads it and runs
+  `repairWeekJobs` (which also runs on every GitHub pull and backup import) to
+  normalize `weekJobs`. Pre-v5 (`timesheet_v4`) migration was dropped in v1.3.3 —
+  if you bump the schema again, add a fresh migration; don't assume old keys are
+  still readable.
 - **Week model:** weeks run **Saturday → Friday**. `DAYS = ['sat'…'fri']`.
   Weeks are keyed by the local Saturday date (`weekKey` / `localDateKey`).
 - **Composite keys:**
