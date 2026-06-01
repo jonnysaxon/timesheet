@@ -114,7 +114,9 @@ state = { jobs, entries, hours, rollbacks, weekJobs, settings }
   update banner if the published value differs from `BOOT_VERSION`. So:
   1. On any user-facing change, bump `version.txt`. That's it for the version —
      there is no `APP_VERSION` literal to keep in sync anymore (`APP_VERSION` is
-     a runtime variable populated from `version.txt`, initially `null`).
+     a runtime variable populated from `version.txt`, initially `null`). Use the
+     **NZ date** (`Pacific/Auckland`) in the `version.txt` date stamp, consistent
+     with the app's `en-NZ` locale everywhere else.
   2. Bump `CACHE_VERSION` in `sw.js` **if cached assets changed**, so the
      pre-cached copy is refreshed rather than served stale.
   - The service worker serves `version.txt` network-first (never stale), so the
