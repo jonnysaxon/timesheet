@@ -34,7 +34,8 @@ body.light {
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;transition:background .2s,color .2s;}
 .header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top));padding-left:calc(12px + env(safe-area-inset-left));padding-right:calc(12px + env(safe-area-inset-right));display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:6px;}
-.header-title{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;}
+.header-title{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;display:flex;align-items:center;}
+.header-logo{width:28px;height:28px;border-radius:6px;display:block;}
 .week-nav{display:flex;align-items:center;gap:4px;}
 .week-label{font-family:var(--mono);font-size:11px;color:var(--text2);min-width:120px;text-align:center;}
 .header-right{display:flex;align-items:center;gap:4px;}
@@ -198,7 +199,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 </div>
 
 <div class="header">
-  <div class="header-title">&#9201;</div>
+  <div class="header-title"><img src="icons/icon-192.png" alt="JTS Timesheet" class="header-logo"></div>
   <div class="week-nav">
     <button class="btn-icon" onclick="changeWeek(-1)">&#8249;</button>
     <div class="week-label" id="weekLabel"></div>

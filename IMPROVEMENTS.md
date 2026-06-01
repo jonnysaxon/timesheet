@@ -7,6 +7,15 @@ Roughly ordered by effort-to-value.
 **Status:** items 2, 4, 5, 6, 7, 8, and 9 are ✅ Done (5 in `v1.4.0`, the rest
 in `v1.3.x`). Items 1 and 3 remain open.
 
+**`v1.4.2`** — replaced the top-left clock emoji in the header with the JTS app
+icon (`.header-logo`). Also removed a "MASTER ICON (1024x1024)" caption that was
+baked into the bottom of all four supplied icon PNGs — it would otherwise have
+shown faintly on the home-screen icon and splash too.
+
+**`v1.4.1`** — iOS standalone safe-area fix: padded the fixed/sticky chrome with
+`env(safe-area-inset-*)` so the header/cog clear the status bar and the footer
+clears the home indicator.
+
 **`v1.3.1`** — versioning hardening: removed the duplicated `APP_VERSION`
 literal so `version.txt` is the single source of truth (read at runtime). This
 eliminates the class of bug where `version.txt` and the in-code version drifted
