@@ -111,7 +111,7 @@ load.
 | `index.html` | The entire app — markup, CSS, and vanilla JS in one file. |
 | `sw.js` | Service worker (network-first navigation for instant updates). |
 | `manifest.json` | Web app manifest (name, theme color, icons) for installable PWA. |
-| `icons/` | App icons: `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` (180px), and the `master-icon-1024.png` source. |
+| `icons/` | App icons: `icon-192.png`, `icon-512.png` (standard), `icon-maskable-192.png`, `icon-maskable-512.png` (Android adaptive/maskable), `apple-touch-icon.png` (iOS, 180px), `favicon.ico` + `favicon-32.png` (browser tab), the `master-icon-1024.png` raster master, and `icon.svg` / `icon-maskable.svg` vector sources. |
 | `timesheet.html` | An earlier/alternate single-file version (see note below). |
 | `version.txt` | **The single source of truth for the app version.** Fetched at runtime to display the version and drive the update banner. |
 | `CLAUDE.md` | Guidance for AI coding agents working in this repo. |
