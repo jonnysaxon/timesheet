@@ -4,8 +4,8 @@ Notes captured while documenting the Weekly Timesheet app. None are blocking —
 the app works as-is — but each would make it more robust or easier to maintain.
 Roughly ordered by effort-to-value.
 
-**Status:** items 2, 4, 6, 7, 8, and 9 were implemented in `v1.3.0` and are
-marked ✅ Done below. Items 1, 3, and 5 remain open.
+**Status:** items 2, 4, 5, 6, 7, 8, and 9 are ✅ Done (5 in `v1.4.0`, the rest
+in `v1.3.x`). Items 1 and 3 remain open.
 
 **`v1.3.1`** — versioning hardening: removed the duplicated `APP_VERSION`
 literal so `version.txt` is the single source of truth (read at runtime). This
@@ -57,11 +57,18 @@ The Anthropic call hard-codes the model in `expandWithAI()`
 
 ## Medium effort
 
-### 5. Add a web app manifest + icons
-The app behaves like a PWA (service worker, "Add to Home Screen") but ships no
-`manifest.json`, so installs use default naming and icons.
+### 5. Add a web app manifest + icons — ✅ Done (v1.4.0)
+The app behaved like a PWA (service worker, "Add to Home Screen") but shipped no
+`manifest.json`, so installs used default naming and icons.
 - **Action:** add `manifest.json` (name, theme color, icons) and link it from
   `index.html`. Provide at least 192px and 512px icons.
+- **Done:** added `manifest.json` (name "JTS Weekly Timesheet", short_name
+  "Timesheet", `display: standalone`, `theme_color`/`background_color`
+  `#0f1117` to match the dark UI and the icon's black background) plus an
+  `icons/` folder (192, 512, 180-px apple-touch, and the 1024 master). Wired the
+  `<head>`: `<link rel="manifest">`, `apple-touch-icon`, `theme-color`, and the
+  `apple-mobile-web-app-*` tags (iOS Safari uses these, not the manifest icons,
+  for Add to Home Screen). The service worker pre-caches the manifest + icons.
 
 ### 6. Pre-cache static assets in the service worker — ✅ Done (v1.3.0)
 
