@@ -4,7 +4,7 @@
 // IMPORTANT: bump this in step with APP_VERSION in index.html so a published
 // update reliably replaces the pre-cached copy instead of serving a stale one.
 
-const CACHE_VERSION = 'timesheet-v3';
+const CACHE_VERSION = 'timesheet-v4';
 const CACHE_NAME = `${CACHE_VERSION}-cache`;
 
 // App-shell assets pre-cached at install so the app is reliably available
