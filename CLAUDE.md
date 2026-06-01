@@ -47,9 +47,9 @@ All state lives in a single `state` object persisted to `localStorage`:
 state = { jobs, entries, hours, rollbacks, weekJobs, settings }
 ```
 
-- **Storage key:** `timesheet_v5` (with `loadState()` migrating from `v4` and
-  running `migrateWeekKeysToLocal` / `repairWeekJobs` on load). Bump the schema
-  carefully and preserve migration paths.
+- **Storage key:** `timesheet_v5` (with `loadState()` upgrading any pre-v5 data
+  via `migrateV4`, and running `repairWeekJobs` on every load/pull/import). Bump
+  the schema carefully and preserve these paths.
 - **Week model:** weeks run **Saturday → Friday**. `DAYS = ['sat'…'fri']`.
   Weeks are keyed by the local Saturday date (`weekKey` / `localDateKey`).
 - **Composite keys:**

@@ -452,15 +452,6 @@ function ensureFields(s)  {
   return s;
 }
 
-// Week keys are now written using local Saturday dates.
-// This function intentionally does NOT rewrite existing data. It only marks the
-// data mode so future app versions do not try to run date migrations again.
-function migrateWeekKeysToLocal(s) {
-  if(!s.settings) s.settings = {};
-  s.settings.weekKeyMode = 'local';
-  return s;
-}
-
 // One-time repair: if a week has entries/hours for a job NOT listed in weekJobs[wk],
 // add that job to the list. Fixes data corrupted by earlier buggy versions.
 function repairWeekJobs(s) {
@@ -500,11 +491,9 @@ function repairWeekJobs(s) {
 }
 
 function loadState() {
-  try { var r=JSON.parse(localStorage.getItem(STORAGE_KEY)); if(r) return repairWeekJobs(migrateWeekKeysToLocal(ensureFields(r))); } catch(e){}
-  try { var o=JSON.parse(localStorage.getItem(PREV_KEY));    if(o) return repairWeekJobs(migrateWeekKeysToLocal(migrateV4(o)));    } catch(e){}
-  var s = fresh();
-  s.settings.weekKeyMode = 'local';
-  return s;
+  try { var r=JSON.parse(localStorage.getItem(STORAGE_KEY)); if(r) return repairWeekJobs(ensureFields(r)); } catch(e){}
+  try { var o=JSON.parse(localStorage.getItem(PREV_KEY));    if(o) return repairWeekJobs(migrateV4(o));    } catch(e){}
+  return fresh();
 }
 
 // v4 used numeric suffix 0-6 (0=Sat…6=Fri) → replace with day name
@@ -1447,7 +1436,7 @@ async function ghPullNow() {
     });
     var pulledState = ensureFields(json);
     pulledState.settings = merged;
-    state = repairWeekJobs(migrateWeekKeysToLocal(pulledState));
+    state = repairWeekJobs(pulledState);
     saveState(); render();
     setGhStatus('Pulled successfully at '+new Date().toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'}));
     setSyncStatus('ok','GitHub sync on');
@@ -1557,7 +1546,7 @@ function importBackup(input) {
       var ds=bk.exportedAt?new Date(bk.exportedAt).toLocaleString('en-NZ'):'unknown date';
       if(!await appConfirm('Restore backup from '+ds+'?\n\nThis will replace ALL current data including settings.',{title:'Restore backup',okText:'Restore',danger:false})) return;
       // Fully restore everything from backup — settings included
-      state = repairWeekJobs(migrateWeekKeysToLocal(ensureFields(bk.data)));
+      state = repairWeekJobs(ensureFields(bk.data));
       // If backup had no ghToken/ghRepo, preserve any currently configured ones
       // (token is never stored in GitHub pulls, but IS stored in local JSON backups)
       saveState(); render();
