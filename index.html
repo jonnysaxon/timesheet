@@ -25,6 +25,7 @@
   --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
   --day-bg:var(--surface2);--day-border:var(--border);
   --day-we-bg:#181b28;--day-we-border:#252838;
+  --oncall-bg:rgba(167,139,250,.12);--oncall-border:rgba(167,139,250,.5);
 }
 body.light {
   --bg:#f0f2f8;--surface:#ffffff;--surface2:#e8eaf2;--border:#d0d4e8;
@@ -32,6 +33,7 @@ body.light {
   --text:#1a1d2e;--text2:#4a5068;--text3:#8b90a7;
   --day-bg:#f5f6fc;--day-border:#d0d4e8;
   --day-we-bg:#ebebf5;--day-we-border:#c8cce0;
+  --oncall-bg:rgba(124,58,237,.08);--oncall-border:rgba(124,58,237,.4);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;transition:background .2s,color .2s;}
@@ -111,6 +113,16 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 .day-weekend .day-label{opacity:.55;}
 .day-weekend .day-input{background:var(--day-we-bg);border-color:var(--day-we-border);}
 .day-weekend .hours-input{background:var(--day-we-bg);border-color:var(--day-we-border);}
+.day-on-call .day-input{background:var(--oncall-bg);border-color:var(--oncall-border);}
+.day-on-call .hours-input{background:var(--oncall-bg);border-color:var(--oncall-border);}
+.day-on-call .day-label{color:var(--purple);opacity:1;}
+.hours-table th.col-on-call,.hours-table td.col-on-call{background:var(--oncall-bg);border-color:var(--oncall-border);}
+.hours-table th.col-on-call{color:var(--purple);}
+.btn-oncall{background:var(--surface2);border:1px solid var(--border);color:var(--text3);height:24px;padding:0 7px;border-radius:5px;cursor:pointer;font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.04em;transition:all .15s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}
+.btn-oncall:hover{border-color:var(--purple);color:var(--purple);}
+.btn-oncall.active{background:var(--oncall-bg);border-color:var(--oncall-border);color:var(--purple);}
+.btn-oncall .dot{width:6px;height:6px;border-radius:50%;background:var(--text3);display:inline-block;}
+.btn-oncall.active .dot{background:var(--purple);}
 .summary-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;}
 .summary-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap;}
 .summary-output{font-family:var(--mono);font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);white-space:pre-wrap;line-height:1.7;word-break:break-word;}
@@ -207,6 +219,7 @@ body.light .job-card:hover{border-color:#b0b8d8;}
     <div class="week-label" id="weekLabel"></div>
     <button class="btn-icon" onclick="changeWeek(1)">&#8250;</button>
     <button class="btn-today" onclick="goToToday()">TODAY</button>
+    <button class="btn-oncall" id="onCallBtn" onclick="toggleOnCall()" title="Mark this week's Tue→Tue rotation as on-call"><span class="dot"></span>ON-CALL</button>
   </div>
   <div class="header-right">
     <div class="sync-row" id="syncIndicator" style="margin-top:0" title="GitHub sync status"><span class="sync-dot off" id="syncDot"></span><span id="syncMsg" style="font-size:10px"></span></div>
@@ -449,11 +462,12 @@ var editingJobId = null;
 var pendingWeekChanges = false; // true when user has added/removed jobs on a no-hours week
 
 /* ─── STATE ─── */
-function fresh()          { return {jobs:[],entries:{},hours:{},rollbacks:{},weekJobs:{},settings:{}}; }
+function fresh()          { return {jobs:[],entries:{},hours:{},rollbacks:{},weekJobs:{},onCall:[],settings:{}}; }
 function ensureFields(s)  {
   if(!s.hours)s.hours={};
   if(!s.rollbacks)s.rollbacks={};
   if(!s.weekJobs)s.weekJobs={};
+  if(!Array.isArray(s.onCall))s.onCall=[];
   if(!s.settings)s.settings={};
   if(Array.isArray(s.jobs)) {
     s.jobs.forEach(function(j){ if(!j.status) j.status='open'; });
@@ -527,6 +541,42 @@ function formatDate(d)    { return d.toLocaleDateString('en-NZ',{day:'2-digit',m
 function isToday(d)       { var t=new Date(); return d.getDate()===t.getDate()&&d.getMonth()===t.getMonth()&&d.getFullYear()===t.getFullYear(); }
 function changeWeek(dir)  { currentWeekStart=new Date(currentWeekStart); currentWeekStart.setDate(currentWeekStart.getDate()+dir*7); clearDraft(); render(); }
 function goToToday()      { currentWeekStart=getWeekStart(new Date()); clearDraft(); render(); }
+
+/* ─── ON-CALL (Tue→Tue, 7-day spans anchored at the start Tuesday) ─── */
+// state.onCall is a sorted list of start-Tuesday ISO strings. Each span covers
+// [startTue, startTue+7) — Tue, Wed, Thu, Fri, Sat, Sun, Mon. The closing
+// Tuesday belongs to the next rotation and is not on-call for this one.
+function tuesdayOfWeek(ws) { var d=new Date(ws); d.setDate(d.getDate()+3); return d; } // Sat+3 = Tue
+function isoAddDays(iso,n) { var d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return localDateKey(d); }
+function onCallSpanFor(dateIso) {
+  var list=state.onCall||[];
+  for(var i=0;i<list.length;i++){
+    var s=list[i], e=isoAddDays(s,7);
+    if(dateIso>=s && dateIso<e) return s;
+  }
+  return null;
+}
+function onCallSpanForWeek(ws) {
+  var dates=getWeekDates(ws);
+  for(var i=0;i<dates.length;i++){ var s=onCallSpanFor(localDateKey(dates[i])); if(s) return s; }
+  return null;
+}
+function formatOnCallSpan(startIso) {
+  return 'Tue '+formatDate(new Date(startIso+'T00:00:00'))+' → Tue '+formatDate(new Date(isoAddDays(startIso,7)+'T00:00:00'));
+}
+async function toggleOnCall() {
+  if(!Array.isArray(state.onCall)) state.onCall=[];
+  var existing=onCallSpanForWeek(currentWeekStart);
+  if(existing){
+    if(!await appConfirm('Clear on-call span '+formatOnCallSpan(existing)+'?',{title:'Clear on-call',okText:'Clear',danger:false})) return;
+    state.onCall=state.onCall.filter(function(s){return s!==existing;});
+  } else {
+    var tueIso=localDateKey(tuesdayOfWeek(currentWeekStart));
+    if(state.onCall.indexOf(tueIso)<0) state.onCall.push(tueIso);
+    state.onCall.sort();
+  }
+  saveState(); render();
+}
 
 /* ─── ENTRY / HOURS (named day keys) ─── */
 function eKey(jid,ws,day) { return jid+'__'+weekKey(ws)+'__'+day; }
@@ -895,6 +945,12 @@ function render() {
 function renderWeekLabel() {
   var d=getWeekDates(currentWeekStart);
   document.getElementById('weekLabel').textContent=formatDate(d[0])+' - '+formatDate(d[6]);
+  var btn=document.getElementById('onCallBtn');
+  if(btn){
+    var span=onCallSpanForWeek(currentWeekStart);
+    btn.classList.toggle('active', !!span);
+    btn.title = span ? 'On-call: '+formatOnCallSpan(span)+' — tap to clear' : "Mark this week's Tue→Tue rotation as on-call";
+  }
 }
 function renderApiWarning() {
   var el=document.getElementById('apiWarning');
@@ -924,7 +980,8 @@ function renderJobs() {
     var daysHtml=DAYS.map(function(day,i){
       var val=getEntry(job.id,day), hrs=getHours(job.id,day);
       var today=isToday(dates[i]), isWE=!!WEEKEND_SET[day];
-      return '<div class="day-entry'+(isWE?' day-weekend':'')+'">'
+      var isOC=!!onCallSpanFor(localDateKey(dates[i]));
+      return '<div class="day-entry'+(isWE?' day-weekend':'')+(isOC?' day-on-call':'')+'">'
         +'<div class="day-label">'+(today?'<span class="today-dot"></span>':'')+DAY_LABELS[i]
         +'<span class="day-date-sub">'+formatDate(dates[i])+'</span></div>'
         +'<textarea class="day-input'+(val?' has-value':'')+'" id="entry-'+job.id+'-'+day+'"'
@@ -1025,18 +1082,20 @@ function renderHoursSummary() {
   if(!rows.length){ el.innerHTML='<div class="empty-state"><div class="icon">&#128336;</div>No hours entered for this week yet.</div>'; return; }
   var colTotals=DAYS.map(function(_,i){return rows.reduce(function(s,r){return s+r.dh[i];},0);});
   var weekTotal=colTotals.reduce(function(a,b){return a+b;},0);
+  var ocFlags=dates.map(function(d){ return !!onCallSpanFor(localDateKey(d)); });
+  function ocCls(i){ return ocFlags[i]?' col-on-call':''; }
   var html='<div class="hours-table-wrap"><table class="hours-table"><thead><tr>'
     +'<th class="col-job">Job Code</th>'
-    +DAY_LABELS.map(function(lbl,i){return '<th>'+lbl+'<br><span style="font-weight:400;font-size:9px">'+formatDate(dates[i])+'</span></th>';}).join('')
+    +DAY_LABELS.map(function(lbl,i){return '<th class="'+ocCls(i).trim()+'">'+lbl+'<br><span style="font-weight:400;font-size:9px">'+formatDate(dates[i])+'</span></th>';}).join('')
     +'<th class="row-total" style="color:var(--purple)">Total</th></tr></thead><tbody>';
   rows.forEach(function(r){
     var rt=r.dh.reduce(function(a,b){return a+b;},0);
     html+='<tr><td class="col-job">'+esc(r.job.code)+(r.job.name?'<br><span style="color:var(--text3);font-size:10px">'+esc(r.job.name)+'</span>':'')+'</td>'
-      +r.dh.map(function(h){return '<td class="'+(h>0?'has-hours':'')+'">'+fmtH(h)+'</td>';}).join('')
+      +r.dh.map(function(h,i){return '<td class="'+(h>0?'has-hours':'')+ocCls(i)+'">'+fmtH(h)+'</td>';}).join('')
       +'<td class="row-total">'+fmtH(rt)+'</td></tr>';
   });
   html+='</tbody><tfoot><tr><td class="col-job">Day Total</td>'
-    +colTotals.map(function(h){return '<td>'+fmtH(h)+'</td>';}).join('')
+    +colTotals.map(function(h,i){return '<td class="'+ocCls(i).trim()+'">'+fmtH(h)+'</td>';}).join('')
     +'<td class="row-total">'+fmtH(weekTotal)+'</td></tr></tfoot></table></div>';
   el.innerHTML=html;
 }
@@ -1240,6 +1299,8 @@ function emailSummary() {
   var dates=getWeekDates(currentWeekStart);
   var weekStr=formatDate(dates[0])+' - '+formatDate(dates[6]);
   var body='Timesheet Summary - Week '+weekStr+'\n\n', hasContent=false;
+  var ocSpan=onCallSpanForWeek(currentWeekStart);
+  if(ocSpan) body='*** ON-CALL WEEK ***\nOn-call: '+formatOnCallSpan(ocSpan)+'\n\n'+body;
   state.jobs.forEach(function(job){
     var lines=[]; DAYS.forEach(function(day){ var v=getEntry(job.id,day).trim(); if(v) lines.push('#'+day+'\n'+v); });
     if(!lines.length) return;
@@ -1247,7 +1308,8 @@ function emailSummary() {
     body+='---------------------------\nJOB CODE: '+job.code+(job.name?' - '+job.name:'')+'\n---------------------------\n'+lines.join('\n\n')+'\n\n';
   });
   if(!hasContent){ alert('No entries to email for this week.'); return; }
-  window.location.href='mailto:'+encodeURIComponent(state.settings.email||'')+'?subject='+encodeURIComponent('Timesheet - '+weekStr)+'&body='+encodeURIComponent(body);
+  var subj=(ocSpan?'[ON-CALL] ':'')+'Timesheet - '+weekStr;
+  window.location.href='mailto:'+encodeURIComponent(state.settings.email||'')+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
 }
 
 /* ─── EXCEL (Date, Job Code, Comment, Hours — hours last) ─── */
