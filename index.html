@@ -556,23 +556,36 @@ function onCallSpanFor(dateIso) {
   }
   return null;
 }
-function onCallSpanForWeek(ws) {
-  var dates=getWeekDates(ws);
-  for(var i=0;i<dates.length;i++){ var s=onCallSpanFor(localDateKey(dates[i])); if(s) return s; }
-  return null;
+function onCallSpansForWeek(ws) {
+  // All distinct spans intersecting this Sat→Fri week (in order). Lets
+  // back-to-back rotations both show up (e.g. Tue Jul 1 + Tue Jul 8 spans
+  // both touch the Sat 5→Fri 11 week).
+  var seen={}, out=[], dates=getWeekDates(ws);
+  for(var i=0;i<dates.length;i++){
+    var s=onCallSpanFor(localDateKey(dates[i]));
+    if(s && !seen[s]){ seen[s]=true; out.push(s); }
+  }
+  return out;
+}
+function isWeekTuesdayOnCallStart(ws) {
+  // The button's active state is anchored to the current week's Tuesday
+  // specifically — not just any overlap. That way Week B of an on-call
+  // rotation still lets you ADD a new rotation starting on its Tuesday.
+  var tueIso=localDateKey(tuesdayOfWeek(ws));
+  return (state.onCall||[]).indexOf(tueIso)>=0;
 }
 function formatOnCallSpan(startIso) {
   return 'Tue '+formatDate(new Date(startIso+'T00:00:00'))+' → Tue '+formatDate(new Date(isoAddDays(startIso,7)+'T00:00:00'));
 }
 async function toggleOnCall() {
   if(!Array.isArray(state.onCall)) state.onCall=[];
-  var existing=onCallSpanForWeek(currentWeekStart);
-  if(existing){
-    if(!await appConfirm('Clear on-call span '+formatOnCallSpan(existing)+'?',{title:'Clear on-call',okText:'Clear',danger:false})) return;
-    state.onCall=state.onCall.filter(function(s){return s!==existing;});
+  var tueIso=localDateKey(tuesdayOfWeek(currentWeekStart));
+  var isStart=state.onCall.indexOf(tueIso)>=0;
+  if(isStart){
+    if(!await appConfirm('Clear on-call span '+formatOnCallSpan(tueIso)+'?',{title:'Clear on-call',okText:'Clear',danger:false})) return;
+    state.onCall=state.onCall.filter(function(s){return s!==tueIso;});
   } else {
-    var tueIso=localDateKey(tuesdayOfWeek(currentWeekStart));
-    if(state.onCall.indexOf(tueIso)<0) state.onCall.push(tueIso);
+    state.onCall.push(tueIso);
     state.onCall.sort();
   }
   saveState(); render();
@@ -947,9 +960,12 @@ function renderWeekLabel() {
   document.getElementById('weekLabel').textContent=formatDate(d[0])+' - '+formatDate(d[6]);
   var btn=document.getElementById('onCallBtn');
   if(btn){
-    var span=onCallSpanForWeek(currentWeekStart);
-    btn.classList.toggle('active', !!span);
-    btn.title = span ? 'On-call: '+formatOnCallSpan(span)+' — tap to clear' : "Mark this week's Tue→Tue rotation as on-call";
+    var tueIso=localDateKey(tuesdayOfWeek(currentWeekStart));
+    var isStart=(state.onCall||[]).indexOf(tueIso)>=0;
+    btn.classList.toggle('active', isStart);
+    btn.title = isStart
+      ? 'On-call: '+formatOnCallSpan(tueIso)+' — tap to clear'
+      : 'Mark on-call '+formatOnCallSpan(tueIso);
   }
 }
 function renderApiWarning() {
@@ -1299,8 +1315,8 @@ function emailSummary() {
   var dates=getWeekDates(currentWeekStart);
   var weekStr=formatDate(dates[0])+' - '+formatDate(dates[6]);
   var body='Timesheet Summary - Week '+weekStr+'\n\n', hasContent=false;
-  var ocSpan=onCallSpanForWeek(currentWeekStart);
-  if(ocSpan) body='*** ON-CALL WEEK ***\nOn-call: '+formatOnCallSpan(ocSpan)+'\n\n'+body;
+  var ocSpans=onCallSpansForWeek(currentWeekStart);
+  if(ocSpans.length) body='*** ON-CALL WEEK ***\nOn-call: '+ocSpans.map(formatOnCallSpan).join('; ')+'\n\n'+body;
   state.jobs.forEach(function(job){
     var lines=[]; DAYS.forEach(function(day){ var v=getEntry(job.id,day).trim(); if(v) lines.push('#'+day+'\n'+v); });
     if(!lines.length) return;
@@ -1308,7 +1324,7 @@ function emailSummary() {
     body+='---------------------------\nJOB CODE: '+job.code+(job.name?' - '+job.name:'')+'\n---------------------------\n'+lines.join('\n\n')+'\n\n';
   });
   if(!hasContent){ alert('No entries to email for this week.'); return; }
-  var subj=(ocSpan?'[ON-CALL] ':'')+'Timesheet - '+weekStr;
+  var subj=(ocSpans.length?'[ON-CALL] ':'')+'Timesheet - '+weekStr;
   window.location.href='mailto:'+encodeURIComponent(state.settings.email||'')+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
 }
 
