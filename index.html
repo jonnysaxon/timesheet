@@ -240,6 +240,23 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 .search-result .sr-text{font-size:12px;color:var(--text2);line-height:1.5;white-space:pre-wrap;word-break:break-word;}
 mark.search-hl{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px;}
 .search-hint{color:var(--text3);font-size:12px;text-align:center;padding:24px 12px;}
+/* Compact header on phones: without this the search + settings buttons overflow off-screen */
+@media(max-width:480px){
+  .header{padding:8px 8px;padding-top:calc(8px + env(safe-area-inset-top));padding-left:calc(8px + env(safe-area-inset-left));padding-right:calc(8px + env(safe-area-inset-right));gap:3px;}
+  .header-logo{width:24px;height:24px;}
+  .week-nav{gap:3px;}
+  .week-label{min-width:84px;font-size:10px;}
+  .btn-icon,.settings-btn{width:24px;height:24px;font-size:12px;}
+  .btn-today,.btn-oncall{height:22px;padding:0 5px;font-size:8.5px;}
+  .header-right{gap:3px;}
+}
+.search-filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.search-chip{background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:20px;padding:3px 12px;font-family:var(--mono);font-size:11px;cursor:pointer;transition:border-color .15s,color .15s,background .15s;white-space:nowrap;}
+.search-chip:hover{border-color:var(--accent);color:var(--accent);}
+.search-chip.active{background:rgba(79,142,247,.15);border-color:var(--accent);color:var(--accent);font-weight:600;}
+.ai-history-row{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:6px 10px;margin-bottom:6px;flex-wrap:wrap;}
+.ai-history-meta{flex:1;min-width:140px;font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.4;}
+.ai-history-meta .sub{color:var(--text3);}
 /* Reduced motion: targeted — keep .spinner and .sync-dot pulse (functional indicators) */
 @media(prefers-reduced-motion:reduce){
   .tab-indicator,.tab,.btn,.btn-icon,.settings-btn,.btn-today,.btn-oncall,.day-input,.hours-input,.form-input,.job-card,.search-result{transition:none!important;}
@@ -315,7 +332,10 @@ mark.search-hl{background:var(--hl);color:inherit;border-radius:3px;padding:0 1p
   <div class="tab-panel" id="tab-projects">
     <div class="panel-header">
       <span class="section-label">Project Codes</span>
-      <button class="btn btn-primary" onclick="openAddModal()">+ Add New Project</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-ai" id="aiReviewAllBtn" onclick="openAiReviewModal(null)">&#10022; Review All</button>
+        <button class="btn btn-primary" onclick="openAddModal()">+ Add New Project</button>
+      </div>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
       <button class="btn btn-secondary" id="filterAllBtn" onclick="setProjectFilter('all',this)">All</button>
@@ -414,9 +434,15 @@ mark.search-hl{background:var(--hl);color:inherit;border-radius:3px;padding:0 1p
       <div class="form-hint">Helps AI write comments in the right professional context.</div>
     </div>
     <div class="form-group">
-      <label class="form-label">AI Model (optional)</label>
-      <input class="form-input" id="inputAiModel" placeholder="claude-sonnet-4-20250514" autocomplete="off">
-      <div class="form-hint">Anthropic model used for AI Expand. Leave blank to use the app default.</div>
+      <label class="form-label">AI Model</label>
+      <select class="form-input" id="inputAiModel" onchange="aiModelSelectChanged()">
+        <option value="">App default &mdash; Claude Sonnet (claude-sonnet-5)</option>
+        <option value="claude-opus-4-8">Claude Opus 4.8 &mdash; most capable</option>
+        <option value="claude-haiku-4-5">Claude Haiku 4.5 &mdash; fastest / cheapest</option>
+        <option value="__custom__">Custom model ID&hellip;</option>
+      </select>
+      <input class="form-input" id="inputAiModelCustom" placeholder="e.g. claude-sonnet-5" autocomplete="off" style="display:none;margin-top:6px">
+      <div class="form-hint">Anthropic model used for AI Expand and AI Review summaries.</div>
     </div>
     <div class="form-group">
       <label class="form-label">Appearance</label>
@@ -486,6 +512,12 @@ mark.search-hl{background:var(--hl);color:inherit;border-radius:3px;padding:0 1p
   <div class="modal" style="max-width:560px">
     <div class="modal-title">&#128269; Search All Weeks</div>
     <input class="form-input" id="globalSearchInput" placeholder="Search entries, project codes..." autocomplete="off" oninput="onSearchInput(this.value)">
+    <div class="search-filter-row" id="searchProjChips"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+      <input class="form-input" type="date" id="searchFrom" onchange="onSearchFilterChange()" title="From date">
+      <span style="font-size:11px;color:var(--text3);flex-shrink:0">to</span>
+      <input class="form-input" type="date" id="searchTo" onchange="onSearchFilterChange()" title="To date">
+    </div>
     <div id="searchResults" class="search-results"></div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('searchModal')">Close</button>
@@ -524,6 +556,10 @@ mark.search-hl{background:var(--hl);color:inherit;border-radius:3px;padding:0 1p
       <span class="ai-status" id="aiReviewStatus"></span>
     </div>
     <div class="summary-output" id="aiReviewOutput" style="display:none;margin-top:10px;max-height:45vh;overflow-y:auto"></div>
+    <div class="form-group" id="aiReviewHistoryWrap" style="display:none;margin-top:14px">
+      <label class="form-label">Saved Summaries</label>
+      <div id="aiReviewHistory"></div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('aiReviewModal')">Close</button>
     </div>
@@ -543,8 +579,10 @@ var BOOT_VERSION  = null;
 var STORAGE_KEY   = 'timesheet_v5';
 var BACKUP_WARN_DAYS = 7;
 var SNOOZE_DAYS   = 2;
-// AI model for entry expansion. Override per-device via settings.aiModel.
-var DEFAULT_AI_MODEL = 'claude-sonnet-4-20250514';
+// AI model for entry expansion / review summaries. Override per-device via
+// settings.aiModel (Settings has a dropdown + custom field). The old default
+// claude-sonnet-4-20250514 is deprecated (retires Jun 2026).
+var DEFAULT_AI_MODEL = 'claude-sonnet-5';
 
 // Week: Sat(idx 0) → Fri(idx 6). DAYS are the storage keys.
 var DAYS        = ['sat','sun','mon','tue','wed','thu','fri'];
@@ -559,13 +597,14 @@ var editingJobId = null;
 var pendingWeekChanges = false; // true when user has added/removed jobs on a no-hours week
 
 /* ─── STATE ─── */
-function fresh()          { return {jobs:[],entries:{},hours:{},rollbacks:{},weekJobs:{},onCall:[],settings:{}}; }
+function fresh()          { return {jobs:[],entries:{},hours:{},rollbacks:{},weekJobs:{},onCall:[],settings:{},aiSummaries:[]}; }
 function ensureFields(s)  {
   if(!s.hours)s.hours={};
   if(!s.rollbacks)s.rollbacks={};
   if(!s.weekJobs)s.weekJobs={};
   if(!Array.isArray(s.onCall))s.onCall=[];
   if(!s.settings)s.settings={};
+  if(!Array.isArray(s.aiSummaries))s.aiSummaries=[];
   if(Array.isArray(s.jobs)) {
     s.jobs.forEach(function(j){ if(!j.status) j.status='open'; });
   }
@@ -1258,6 +1297,8 @@ function setProjectFilter(filter, btn) {
 function renderProjects() {
   var el = document.getElementById('projectsList');
   if (!el) return;
+  var allBtn = document.getElementById('aiReviewAllBtn');
+  if (allBtn) { allBtn.disabled = !state.settings.apiKey; allBtn.title = state.settings.apiKey ? 'AI review summary across all projects' : 'Set your Anthropic API key in Settings'; }
   if (!state.jobs.length) {
     el.innerHTML = '<div class="empty-state"><div class="icon">&#128193;</div>No projects yet. Tap "+ Add Project" to create one.</div>';
     return;
@@ -1409,13 +1450,13 @@ function setAIStatus(jid,msg,type) {
 }
 
 /* ─── AI PROJECT REVIEW (date-range summary for performance reviews) ─── */
-var aiReviewJobId=null;
+var aiReviewJobId=null; // job id, or null = all projects
 var aiReviewStyle='deliverables';
 function openAiReviewModal(jid) {
-  var job=state.jobs.find(function(j){return j.id===jid;});
-  if(!job) return;
-  aiReviewJobId=jid;
-  document.getElementById('aiReviewJobLabel').textContent=job.code;
+  var job=jid?state.jobs.find(function(j){return j.id===jid;}):null;
+  if(jid&&!job) return;
+  aiReviewJobId=jid||null;
+  document.getElementById('aiReviewJobLabel').textContent=job?job.code:'ALL PROJECTS';
   var out=document.getElementById('aiReviewOutput');
   out.style.display='none'; out.textContent='';
   document.getElementById('aiReviewCopyBtn').style.display='none';
@@ -1423,6 +1464,7 @@ function openAiReviewModal(jid) {
   setAiReviewStatus('');
   aiReviewSetStyle('deliverables',document.getElementById('aiStyleBtnDeliverables'));
   aiReviewPreset('6m',document.getElementById('aiRangeBtn6m'));
+  renderAiReviewHistory();
   document.getElementById('aiReviewModal').classList.add('open');
 }
 function aiReviewPreset(preset,btn) {
@@ -1453,24 +1495,30 @@ function aiReviewSetStyle(style,btn) {
   });
   if(btn){ btn.classList.remove('btn-secondary'); btn.classList.add('btn-primary'); }
 }
+// jid null = all projects. Items carry the job code so multi-project logs stay readable.
 function collectJobData(jid,fromIso,toIso) {
   var items=[], totalHours=0;
   var re=/^(.+?)__(\d{4}-\d{2}-\d{2})__(sat|sun|mon|tue|wed|thu|fri)$/;
+  function codeFor(id) {
+    var j=state.jobs.find(function(x){return x.id===id;});
+    return j?j.code:'(deleted project)';
+  }
   Object.keys(state.entries).forEach(function(k){
-    if(k.indexOf(jid+'__')!==0) return;
     var m=k.match(re);
-    if(!m||m[1]!==jid) return;
+    if(!m) return;
+    if(jid&&m[1]!==jid) return;
     var text=state.entries[k];
     if(!text) return;
     var dateIso=localDateKey(dateFromWeekDay(m[2],m[3]));
     if(dateIso<fromIso||dateIso>toIso) return;
-    items.push({dateIso:dateIso,day:m[3],text:text,hours:state.hours['h__'+k]||''});
+    items.push({dateIso:dateIso,day:m[3],code:codeFor(m[1]),text:text,hours:state.hours['h__'+k]||''});
   });
   // Hours summed independently — a day can have hours logged without comment text.
   Object.keys(state.hours).forEach(function(k){
-    if(k.indexOf('h__'+jid+'__')!==0) return;
+    if(k.indexOf('h__')!==0) return;
     var m=k.slice(3).match(re);
-    if(!m||m[1]!==jid) return;
+    if(!m) return;
+    if(jid&&m[1]!==jid) return;
     var dateIso=localDateKey(dateFromWeekDay(m[2],m[3]));
     if(dateIso<fromIso||dateIso>toIso) return;
     var h=parseFloat(state.hours[k]);
@@ -1481,31 +1529,41 @@ function collectJobData(jid,fromIso,toIso) {
 }
 function updateAiReviewRangeInfo() {
   var el=document.getElementById('aiReviewRangeInfo');
-  if(!el||!aiReviewJobId) return;
+  if(!el) return;
   var from=document.getElementById('aiReviewFrom').value;
   var to=document.getElementById('aiReviewTo').value;
   if(!from||!to||from>to){ el.textContent='Pick a valid date range.'; return; }
   var data=collectJobData(aiReviewJobId,from,to);
   el.textContent=data.items.length
     ? data.items.length+' dated entries, '+fmtH(data.totalHours)+'h logged in this range.'
-    : 'No entries for this project in this range.';
+    : 'No entries '+(aiReviewJobId?'for this project':'')+' in this range.';
 }
 function buildAiReviewPrompt(job,from,to,data) {
   var role=state.settings.role||'IT professional';
+  var allProjects=!job;
   var log=data.items.map(function(it){
     var h=parseFloat(it.hours);
-    return it.dateIso+' '+DAY_LABELS[DAYS.indexOf(it.day)]+(!isNaN(h)&&h>0?' ('+fmtH(h)+'h)':'')+': '+it.text;
+    return it.dateIso+' '+DAY_LABELS[DAYS.indexOf(it.day)]
+      +(allProjects?' ['+it.code+']':'')
+      +(!isNaN(h)&&h>0?' ('+fmtH(h)+'h)':'')+': '+it.text;
   });
   // Keep the prompt within a sane size for very long ranges: drop oldest lines first.
   var truncated=false;
   while(log.join('\n').length>80000&&log.length>1){ log.shift(); truncated=true; }
-  var header='You are helping a '+role+' at Cognizant prepare content for a half-yearly performance review (goPerform). Using ONLY the dated work log below, write a performance-review-ready summary for this project.\n\n'
-    +'Project: '+job.code+(job.name?' - '+job.name:'')+'\n'
+  var header='You are helping a '+role+' at Cognizant prepare content for a half-yearly performance review (goPerform). Using ONLY the dated work log below, write a performance-review-ready summary of '
+    +(allProjects?'all work across every project in the period.':'this project.')+'\n\n'
+    +(allProjects?'Scope: all projects (the project code for each log line is shown in [brackets])':'Project: '+job.code+(job.name?' - '+job.name:''))+'\n'
     +'Period: '+from+' to '+to+'\n'
     +'Total hours logged in period: '+fmtH(data.totalHours)+'h across '+data.items.length+' logged days\n\n';
   var structure;
   if(aiReviewStyle==='timeline'){
-    structure='Structure the output as a chronological month-by-month narrative: for each month in the period that has logged work, a short heading (e.g. "Feb 2026") followed by 2-4 sentences describing what was worked on and delivered that month. Close with a 2-sentence overall wrap-up of the period.';
+    structure='Structure the output as a chronological month-by-month narrative: for each month in the period that has logged work, a short heading (e.g. "Feb 2026") followed by 2-4 sentences describing what was worked on and delivered that month'
+      +(allProjects?', naming the project codes worked on':'')+'. Close with a 2-sentence overall wrap-up of the period.';
+  } else if(allProjects){
+    structure='Structure the output exactly as:\n'
+      +'1. OVERVIEW - 2-3 sentences describing the overall engagement and the role played across all projects.\n'
+      +'2. KEY DELIVERABLES & ACCOMPLISHMENTS - grouped under a short heading per project code, with 2-5 bullets each. Each bullet starts with a strong past-tense action verb and states what was done AND its impact or outcome.\n'
+      +'3. SKILLS & STRENGTHS DEMONSTRATED - 3-5 short bullets drawn from across all projects.';
   } else {
     structure='Structure the output exactly as:\n'
       +'1. OVERVIEW - 2-3 sentences describing the engagement and the role played.\n'
@@ -1517,15 +1575,15 @@ function buildAiReviewPrompt(job,from,to,data) {
     +log.join('\n');
 }
 async function generateAiReview() {
-  var job=state.jobs.find(function(j){return j.id===aiReviewJobId;});
-  if(!job) return;
+  var job=aiReviewJobId?state.jobs.find(function(j){return j.id===aiReviewJobId;}):null;
+  if(aiReviewJobId&&!job) return;
   var apiKey=state.settings.apiKey;
   if(!apiKey){ alert('Set your Anthropic API key in Settings first.'); return; }
   var from=document.getElementById('aiReviewFrom').value;
   var to=document.getElementById('aiReviewTo').value;
   if(!from||!to||from>to){ setAiReviewStatus('Pick a valid date range first.','error'); return; }
   var data=collectJobData(aiReviewJobId,from,to);
-  if(!data.items.length){ setAiReviewStatus('No entries for this project in that period.','error'); return; }
+  if(!data.items.length){ setAiReviewStatus('No entries in that period.','error'); return; }
   var btn=document.getElementById('aiReviewGenBtn');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Generating...'; setAiReviewStatus('');
   try {
@@ -1537,11 +1595,13 @@ async function generateAiReview() {
     if(!res.ok){ var er=await res.json().catch(function(){return{};}); throw new Error(er.error&&er.error.message?er.error.message:'HTTP '+res.status); }
     var rdata=await res.json();
     var text=(rdata.content&&rdata.content.find(function(b){return b.type==='text';}))||{text:''};
+    var result=(text.text||'').trim();
     var out=document.getElementById('aiReviewOutput');
-    out.textContent=(text.text||'').trim();
+    out.textContent=result;
     out.style.display='block';
     document.getElementById('aiReviewCopyBtn').style.display='inline-flex';
-    setAiReviewStatus('Done - review and copy.','success');
+    saveAiSummary(job,from,to,result);
+    setAiReviewStatus('Done - saved to history below.','success');
   } catch(err) {
     setAiReviewStatus('Error: '+err.message,'error');
   } finally {
@@ -1557,6 +1617,62 @@ function copyAiReview(btn) {
     var o=btn.innerHTML; btn.innerHTML='Copied'; btn.style.color='var(--green)';
     setTimeout(function(){btn.innerHTML=o;btn.style.color='';},1500);
   }).catch(function(){ alert('Copy failed - select the text and copy manually.'); });
+}
+
+/* Saved AI summaries: newest first, capped so state stays small for GitHub sync. */
+var MAX_AI_SUMMARIES=20;
+function saveAiSummary(job,from,to,text) {
+  state.aiSummaries.unshift({
+    id:uid(), jid:job?job.id:null, code:job?job.code:'All projects',
+    from:from, to:to, style:aiReviewStyle, text:text,
+    created:new Date().toISOString()
+  });
+  if(state.aiSummaries.length>MAX_AI_SUMMARIES) state.aiSummaries.length=MAX_AI_SUMMARIES;
+  saveState();
+  renderAiReviewHistory();
+}
+function renderAiReviewHistory() {
+  var wrap=document.getElementById('aiReviewHistoryWrap');
+  var el=document.getElementById('aiReviewHistory');
+  if(!wrap||!el) return;
+  var list=state.aiSummaries.filter(function(s){ return (s.jid||null)===(aiReviewJobId||null); });
+  if(!list.length){ wrap.style.display='none'; el.innerHTML=''; return; }
+  wrap.style.display='block';
+  el.innerHTML=list.map(function(s){
+    var d=new Date(s.created);
+    return '<div class="ai-history-row">'
+      +'<div class="ai-history-meta">'+esc(s.from)+' &rarr; '+esc(s.to)
+      +' &middot; '+(s.style==='timeline'?'Timeline':'Deliverables')
+      +'<div class="sub">generated '+d.toLocaleDateString('en-NZ',{day:'2-digit',month:'short',year:'numeric'})+'</div></div>'
+      +'<button class="btn-mini" onclick="viewAiSummary(\''+s.id+'\')">View</button>'
+      +'<button class="btn-mini" onclick="copyAiSummary(\''+s.id+'\',this)">Copy</button>'
+      +'<button class="btn-mini-danger" onclick="deleteAiSummary(\''+s.id+'\')">&#10005;</button>'
+      +'</div>';
+  }).join('');
+}
+function viewAiSummary(id) {
+  var s=state.aiSummaries.find(function(x){return x.id===id;});
+  if(!s) return;
+  var out=document.getElementById('aiReviewOutput');
+  out.textContent=s.text;
+  out.style.display='block';
+  document.getElementById('aiReviewCopyBtn').style.display='inline-flex';
+  aiReviewSetStyle(s.style, document.getElementById(s.style==='timeline'?'aiStyleBtnTimeline':'aiStyleBtnDeliverables'));
+  setAiReviewStatus('Showing saved summary from history.');
+}
+function copyAiSummary(id,btn) {
+  var s=state.aiSummaries.find(function(x){return x.id===id;});
+  if(!s) return;
+  navigator.clipboard.writeText(s.text).then(function(){
+    var o=btn.textContent; btn.textContent='Copied'; btn.style.color='var(--green)';
+    setTimeout(function(){btn.textContent=o;btn.style.color='';},1500);
+  }).catch(function(){ alert('Copy failed - use View and copy from the output box.'); });
+}
+async function deleteAiSummary(id) {
+  if(!await appConfirm('Delete this saved summary?',{title:'Delete summary',okText:'Delete'})) return;
+  state.aiSummaries=state.aiSummaries.filter(function(x){return x.id!==id;});
+  saveState();
+  renderAiReviewHistory();
 }
 
 /* ─── EMAIL ─── */
@@ -1921,6 +2037,7 @@ function addExistingAndClose(jid) {
 
 /* ─── GLOBAL SEARCH ─── */
 var searchDebounceTimer=null;
+var searchProjFilter=null; // job id, or null = all projects
 // Actual calendar date for an entry = week's Saturday + day offset.
 // 'T00:00:00' forces local-midnight parsing (bare YYYY-MM-DD would be UTC and shift days).
 function dateFromWeekDay(wk,day) {
@@ -1932,6 +2049,10 @@ function openSearch() {
   document.getElementById('searchModal').classList.add('open');
   var inp=document.getElementById('globalSearchInput');
   inp.value='';
+  searchProjFilter=null;
+  document.getElementById('searchFrom').value='';
+  document.getElementById('searchTo').value='';
+  renderSearchChips();
   renderSearchResults('');
   setTimeout(function(){inp.focus();},100);
 }
@@ -1939,8 +2060,31 @@ function onSearchInput(val) {
   clearTimeout(searchDebounceTimer);
   searchDebounceTimer=setTimeout(function(){ renderSearchResults(val.trim()); },250);
 }
+function onSearchFilterChange() {
+  renderSearchResults(document.getElementById('globalSearchInput').value.trim());
+}
+function setSearchProj(jid) {
+  searchProjFilter=jid||null;
+  renderSearchChips();
+  onSearchFilterChange();
+}
+function renderSearchChips() {
+  var el=document.getElementById('searchProjChips');
+  if(!el) return;
+  var jobs=state.jobs.slice().sort(function(a,b){return (a.code||'').localeCompare(b.code||'');});
+  var html='<button class="search-chip'+(searchProjFilter===null?' active':'')+'" onclick="setSearchProj(null)">All</button>';
+  html+=jobs.map(function(j){
+    return '<button class="search-chip'+(searchProjFilter===j.id?' active':'')+'" onclick="setSearchProj(\''+j.id+'\')">'+esc(j.code)+'</button>';
+  }).join('');
+  el.innerHTML=html;
+}
+function searchFiltersActive() {
+  return !!(searchProjFilter||document.getElementById('searchFrom').value||document.getElementById('searchTo').value);
+}
 function searchEntries(q) {
   var ql=q.toLowerCase(), out=[];
+  var fromIso=document.getElementById('searchFrom').value;
+  var toIso=document.getElementById('searchTo').value;
   var re=/^(.+?)__(\d{4}-\d{2}-\d{2})__(sat|sun|mon|tue|wed|thu|fri)$/;
   Object.keys(state.entries).forEach(function(k){
     var m=k.match(re);
@@ -1948,12 +2092,18 @@ function searchEntries(q) {
     var text=state.entries[k];
     if(!text) return;
     var jid=m[1], wk=m[2], day=m[3];
+    if(searchProjFilter&&jid!==searchProjFilter) return;
     var job=state.jobs.find(function(j){return j.id===jid;}); // may be undefined (deleted project)
-    var hit = text.toLowerCase().indexOf(ql)>=0
+    // Empty query with an active filter = "list everything matching the filter"
+    var hit = !ql
+      || text.toLowerCase().indexOf(ql)>=0
       || (job && (job.code||'').toLowerCase().indexOf(ql)>=0)
       || (job && (job.name||'').toLowerCase().indexOf(ql)>=0);
     if(!hit) return;
-    out.push({wk:wk, day:day, dateIso:localDateKey(dateFromWeekDay(wk,day)), jid:jid, job:job, text:text, hours:state.hours['h__'+k]||''});
+    var dateIso=localDateKey(dateFromWeekDay(wk,day));
+    if(fromIso&&dateIso<fromIso) return;
+    if(toIso&&dateIso>toIso) return;
+    out.push({wk:wk, day:day, dateIso:dateIso, jid:jid, job:job, text:text, hours:state.hours['h__'+k]||''});
   });
   out.sort(function(a,b){ return a.dateIso<b.dateIso?1:(a.dateIso>b.dateIso?-1:0); });
   return out;
@@ -1971,9 +2121,11 @@ function highlightHtml(text,q) {
 function renderSearchResults(q) {
   var el=document.getElementById('searchResults');
   if(!el) return;
-  if(q.length<2){ el.innerHTML='<div class="search-hint">Type at least 2 characters to search all weeks.</div>'; return; }
-  var results=searchEntries(q);
-  if(!results.length){ el.innerHTML='<div class="search-hint">No entries match &quot;'+esc(q)+'&quot;.</div>'; return; }
+  // A project chip or date filter alone is enough to list entries; free text needs 2+ chars.
+  if(q.length===1||(q.length<2&&!searchFiltersActive())){ el.innerHTML='<div class="search-hint">Type at least 2 characters, or pick a project or date range below.</div>'; return; }
+  var hq=q.length<2?'':q;
+  var results=searchEntries(hq);
+  if(!results.length){ el.innerHTML='<div class="search-hint">'+(hq?'No entries match &quot;'+esc(q)+'&quot;.':'No entries match these filters.')+'</div>'; return; }
   var MAX=200, capped=results.length>MAX;
   if(capped) results=results.slice(0,MAX);
   var html='', lastWk=null;
@@ -1993,7 +2145,7 @@ function renderSearchResults(q) {
       +'<span class="sr-date">'+DAY_LABELS[DAYS.indexOf(r.day)]+' '+formatDate(d)+'</span>'
       +(!isNaN(hrs)&&hrs>0?'<span class="sr-hours">'+fmtH(hrs)+'h</span>':'')
       +'</div>'
-      +'<div class="sr-text">'+highlightHtml(r.text,q)+'</div>'
+      +'<div class="sr-text">'+highlightHtml(r.text,hq)+'</div>'
       +'</button>';
   });
   if(capped) html+='<div class="search-hint">Showing first '+MAX+' matches &mdash; refine your search.</div>';
@@ -2067,12 +2219,29 @@ function populateSettingsForm() {
   akIn.value = ''; akIn.style.display = 'none';
   var gtIn = document.getElementById('inputGhToken');
   gtIn.value = ''; gtIn.style.display = 'none';
+  // Restore the masked display rows that editSensitive() hides — without this,
+  // after one "Change" the row stayed hidden forever and the key looked uneditable.
+  document.getElementById('apiKeyDisplay').style.display = 'flex';
+  document.getElementById('ghTokenDisplay').style.display = 'flex';
   // Normal fields
   document.getElementById('inputEmail').value   = state.settings.email||'';
   document.getElementById('inputRole').value    = state.settings.role||'';
-  document.getElementById('inputAiModel').value = state.settings.aiModel||'';
   document.getElementById('inputAppUrl').value  = state.settings.appUrl||'';
   document.getElementById('inputGhRepo').value  = state.settings.ghRepo||'';
+  // AI model dropdown: pick the matching preset, else "Custom" with the value shown
+  var sel = document.getElementById('inputAiModel');
+  var custom = document.getElementById('inputAiModelCustom');
+  var model = state.settings.aiModel||'';
+  var isPreset = !model || Array.prototype.some.call(sel.options, function(o){return o.value===model;});
+  sel.value = isPreset ? model : '__custom__';
+  custom.value = isPreset ? '' : model;
+  custom.style.display = sel.value==='__custom__' ? 'block' : 'none';
+}
+function aiModelSelectChanged() {
+  var sel = document.getElementById('inputAiModel');
+  var custom = document.getElementById('inputAiModelCustom');
+  custom.style.display = sel.value==='__custom__' ? 'block' : 'none';
+  if (sel.value==='__custom__') custom.focus();
 }
 async function clearSensitive(field) {
   if (!await appConfirm('Clear the saved ' + (field === 'apiKey' ? 'API key' : 'GitHub token') + '?',{title:'Clear secret',okText:'Clear'})) return;
@@ -2113,7 +2282,8 @@ function saveSettings() {
   }
   state.settings.email   = document.getElementById('inputEmail').value.trim();
   state.settings.role    = document.getElementById('inputRole').value.trim();
-  state.settings.aiModel = document.getElementById('inputAiModel').value.trim();
+  var aiSel = document.getElementById('inputAiModel').value;
+  state.settings.aiModel = aiSel==='__custom__' ? document.getElementById('inputAiModelCustom').value.trim() : aiSel;
   state.settings.appUrl  = document.getElementById('inputAppUrl').value.trim();
   state.settings.ghRepo  = document.getElementById('inputGhRepo').value.trim();
   saveState(); closeModal('settingsModal'); render(); updateSyncIndicator();

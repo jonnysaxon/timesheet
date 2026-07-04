@@ -25,6 +25,17 @@ No build step, no server, no account. Open `index.html` and start typing.
   professional timesheet comments using the Anthropic API. The model is
   configurable in Settings (defaults to a current Claude Sonnet). Each expansion
   can be rolled back.
+- **Global search (🔍 in the header)** — search every entry across all weeks by
+  text or project code, with optional per-project and date-range filters.
+  Results are listed as dated entries grouped by week; tapping one jumps
+  straight to that week with the project card opened.
+- **AI review summaries** *(optional)* — from the Projects tab, generate a
+  performance-review-ready summary of any project (or **all projects**) over a
+  chosen date range (presets or custom). Two styles: **Deliverables**
+  (overview / key accomplishments / skills — written for pasting into a review
+  tool such as goPerform) or **Timeline** (month-by-month narrative). Includes
+  total hours for the range, copy-to-clipboard, regenerate, and a saved-summary
+  history (last 20) so drafts can be compared or re-copied without regenerating.
 - **Email & Excel export** — email a formatted weekly summary, or download the
   week as an `.xlsx` spreadsheet (via SheetJS).
 - **GitHub sync** *(optional)* — store your data as `timesheet-data.json` in a
@@ -95,7 +106,8 @@ load.
 ## Data & privacy
 
 - All timesheet data lives in your browser's `localStorage` under the key
-  `timesheet_v5` (a v4 → v5 migration runs automatically for older data).
+  `timesheet_v5` (this includes saved AI review summaries, so treat backups
+  and the synced `timesheet-data.json` as sensitive).
 - The **only** outbound network calls are the ones you opt into:
   the Anthropic API (AI expansion) and the GitHub API (sync). The app also loads
   the SheetJS library and IBM Plex fonts from CDNs.
@@ -112,7 +124,7 @@ load.
 | `sw.js` | Service worker (network-first navigation for instant updates). |
 | `manifest.json` | Web app manifest (name, theme color, icons) for installable PWA. |
 | `icons/` | App icons: `icon-192.png`, `icon-512.png` (standard), `icon-maskable-192.png`, `icon-maskable-512.png` (Android adaptive/maskable), `apple-touch-icon.png` (iOS, 180px), `favicon.ico` + `favicon-32.png` (browser tab), the `master-icon-1024.png` raster master, and `icon.svg` / `icon-maskable.svg` vector sources. |
-| `timesheet.html` | An earlier/alternate single-file version (see note below). |
+| `timesheet.html` | Redirect stub to `index.html` (kept so old bookmarks/links still work). |
 | `version.txt` | **The single source of truth for the app version.** Fetched at runtime to display the version and drive the update banner. |
 | `CLAUDE.md` | Guidance for AI coding agents working in this repo. |
 
@@ -126,9 +138,6 @@ different value mean a newer version was published, so the app shows a "New
 version available" banner that reloads to the latest. **To release a new
 version, just edit `version.txt`** (and bump `CACHE_VERSION` in `sw.js` if cached
 assets changed). There is no second version constant to keep in sync.
-
-> **Note:** `timesheet.html` is an earlier/alternate copy — see "Suggested
-> improvements" below.
 
 ---
 

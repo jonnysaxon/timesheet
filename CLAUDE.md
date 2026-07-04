@@ -19,7 +19,7 @@ the user explicitly asks. Keep the "open the file and it runs" property intact.
 | `sw.js` | Service worker. Pre-caches the app shell (incl. `manifest.json` + icons) at install; network-first for navigation, cache-first for other assets. |
 | `manifest.json` | Web app manifest (installable PWA: name, `display:standalone`, theme/bg `#0f1117`, icon entries). |
 | `icons/` | PWA icons: `icon-192.png`, `icon-512.png` (manifest `purpose:"any"`), `icon-maskable-192.png`, `icon-maskable-512.png` (manifest `purpose:"maskable"`, Android adaptive), `apple-touch-icon.png` (180px, used by iOS), `favicon.ico` + `favicon-32.png` (browser tab), `master-icon-1024.png` (raster master), `icon.svg` / `icon-maskable.svg` (vector sources). |
-| `timesheet.html` | Legacy/alternate copy of the app. Usually **not** the file to edit — confirm with the user before touching it. |
+| `timesheet.html` | Redirect stub to `index.html` (kept only so old bookmarks work). Contains no app code — never add app behavior here. |
 | `version.txt` | **Single source of truth for the version.** Fetched at runtime to display the version and drive the update banner. The app no longer hard-codes a version string. |
 | `README.md` | Human-facing docs. |
 | `IMPROVEMENTS.md` | Backlog of suggested improvements, with ✅ Done markers. |
@@ -46,7 +46,7 @@ install, or API calls. There is nothing to compile or lint.
 All state lives in a single `state` object persisted to `localStorage`:
 
 ```
-state = { jobs, entries, hours, rollbacks, weekJobs, settings }
+state = { jobs, entries, hours, rollbacks, weekJobs, onCall, settings, aiSummaries }
 ```
 
 - **Storage key:** `timesheet_v5`. `loadState()` reads it and runs
@@ -69,16 +69,36 @@ state = { jobs, entries, hours, rollbacks, weekJobs, settings }
   This logic lives in `getJobsForCurrentWeek()` / `inheritJobsFromPriorWeek()` and
   is the trickiest part of the app — read it carefully before changing it.
 - **Rendering:** plain string-template `innerHTML` builders (`render`,
-  `renderJobs`, `renderProjects`, `renderSummary`, `renderHoursSummary`). Always
-  pass user-controlled text through `esc()` to avoid HTML injection.
+  `renderJobs`, `renderProjects`, `renderSummary`, `renderHoursSummary`,
+  `renderSearchResults`, `renderAiReviewHistory`). Always pass user-controlled
+  text through `esc()` to avoid HTML injection. Search-term highlighting must
+  keep the `highlightHtml()` order: split on the raw match first, then `esc()`
+  each piece — never the reverse.
+- **Global search** (`openSearch` / `searchEntries` / `renderSearchResults`):
+  the header 🔍 button opens `#searchModal`. It iterates `state.entries` keys
+  with the composite-key regex, supports a project-chip filter
+  (`searchProjFilter`) plus from/to date inputs, and must tolerate entries whose
+  job was deleted (orphaned entries render a "(deleted project)" badge). Result
+  clicks navigate via `goToSearchResult`, which sets `currentWeekStart` and
+  calls `clearDraft()` **before** `render()` — keep that order or week drafts
+  leak across weeks.
+- **AI review summaries** (`openAiReviewModal(jid|null)` / `generateAiReview`):
+  `jid === null` means "all projects" (log lines gain a `[CODE]` prefix).
+  Generated summaries auto-save to `state.aiSummaries` (newest first, capped at
+  `MAX_AI_SUMMARIES = 20`) and are listed per scope in the modal's Saved
+  Summaries section. `state.aiSummaries` syncs to GitHub and is included in
+  backups — keep the cap so the payload stays small.
 
 ## External integrations (all optional, all user-keyed)
 
-- **Anthropic API** (`expandWithAI`): direct browser call to `api.anthropic.com`
-  for AI entry expansion. The model comes from `state.settings.aiModel` and falls
-  back to the `DEFAULT_AI_MODEL` constant near the top of the script
-  (currently `claude-sonnet-4-20250514`) — don't re-hard-code it inline. API key
-  comes from settings; never hard-code or log it.
+- **Anthropic API** (`expandWithAI`, `generateAiReview`): direct browser calls
+  to `api.anthropic.com` for AI entry expansion and date-range review summaries.
+  The model comes from `state.settings.aiModel` (a dropdown + custom field in
+  Settings) and falls back to the `DEFAULT_AI_MODEL` constant near the top of
+  the script (currently `claude-sonnet-5`) — don't re-hard-code it inline. API
+  key comes from settings; never hard-code or log it. New AI calls should copy the
+  fetch shape (headers incl. `anthropic-dangerous-direct-browser-access`) from
+  these two functions.
 - **GitHub sync** (`ghPush` / `ghPullNow`): stores `state` as
   `timesheet-data.json` via the GitHub Contents API. `ghPush()` does a
   SHA-based conflict check — it compares the remote SHA against `ghLastSha` (the
