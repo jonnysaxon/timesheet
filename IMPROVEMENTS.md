@@ -4,8 +4,8 @@ Notes captured while documenting the Weekly Timesheet app. None are blocking —
 the app works as-is — but each would make it more robust or easier to maintain.
 Roughly ordered by effort-to-value.
 
-**Status:** items 2, 4, 5, 6, 7, 8, and 9 are ✅ Done (5 in `v1.4.0`, the rest
-in `v1.3.x`). Items 1 and 3 remain open.
+**Status:** items 1, 2, 4, 5, 6, 7, 8, and 9 are ✅ Done (1 in `v1.7.0`, 5 in
+`v1.4.0`, the rest in `v1.3.x`). Item 3 remains open (optional).
 
 **`v1.4.2`** — replaced the top-left clock emoji in the header with the JTS app
 icon (`.header-logo`). Also removed a "MASTER ICON (1024x1024)" caption that was
@@ -25,11 +25,14 @@ detection runs independently of service-worker registration.
 
 ## Quick wins
 
-### 1. Consolidate the two HTML files
+### 1. Consolidate the two HTML files — ✅ Done (v1.7.0)
 `index.html` and `timesheet.html` are two near-identical copies of the app.
 Keeping both means edits can silently drift between them.
 - **Action:** pick `index.html` as the single entry point; delete
   `timesheet.html` or move it to an `archive/` folder with a note.
+- **Done:** `timesheet.html` is now a tiny redirect stub pointing at
+  `index.html` (meta refresh + `location.replace`), so old bookmarks and
+  home-screen links keep working but there is only one copy of the app code.
 
 ### 2. Add a `.gitignore` — ✅ Done (v1.3.0)
 There's no `.gitignore` today, so OS/editor cruft (`.DS_Store`, `.vscode/`,
