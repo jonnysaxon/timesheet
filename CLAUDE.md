@@ -50,7 +50,10 @@ All state lives in a single `state` object persisted to `localStorage`:
 state = { jobs, entries, hours, rollbacks, weekJobs, onCall, settings, aiSummaries }
 ```
 
-- **Storage key:** `timesheet_v5`. `loadState()` reads it and runs
+- **Storage key:** `timesheet_v5`. Two small device-local keys live *outside*
+  `state`: `timesheet_ghDirty` and `timesheet_ghSha` (sync bookkeeping — see
+  GitHub sync below). They must stay separate localStorage keys: putting them in
+  `state` would sync/back-up per-device facts across devices. `loadState()` runs
   `repairWeekJobs` (which also runs on every GitHub pull and backup import) to
   normalize `weekJobs`. Pre-v5 (`timesheet_v4`) migration was dropped in v1.3.3 —
   if you bump the schema again, add a fresh migration; don't assume old keys are
@@ -107,6 +110,16 @@ state = { jobs, entries, hours, rollbacks, weekJobs, onCall, settings, aiSummari
   the remote has moved; `ghPushNow()` then asks the user to overwrite or pull.
   Pass `ghPush({force:true})` to skip the check. Still effectively last-write-wins
   *after* the user's explicit choice (no field-level merge).
+  **Startup-sync invariants (v1.7.3 data-loss fix — don't regress):**
+  `ghDirty` / `ghLastSha` are persisted per-device (`timesheet_ghDirty` /
+  `timesheet_ghSha`, written via `markDirty`/`markClean`/`setGhLastSha`) so a
+  restart remembers local state is ahead of GitHub. On open the app must check
+  that flag: dirty → `ghPushNow()` (conflict-checked push), clean → `ghPullNow()`.
+  Never make startup pull unconditionally — the auto-push on app close is
+  best-effort only (iOS kills it), so an unguarded pull silently discards
+  unsynced local entries. Related invariants: a successful pull must end with
+  `markClean()` (its `saveState()` re-marks dirty otherwise), and changing
+  `ghRepo` in Settings must reset the persisted SHA (`setGhLastSha(null)`).
 - **SheetJS (xlsx)**: loaded from CDN for Excel export, and pre-cached
   best-effort by the service worker.
 
