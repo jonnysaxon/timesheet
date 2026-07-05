@@ -99,7 +99,25 @@ All settings are stored **only on your device** (in `localStorage`).
 3. Paste the token and `owner/repo` into Settings, then **Test** and **Push**.
 
 Data is saved to `timesheet-data.json` in that repo and pulled automatically on
-load.
+load. The synced file contains your timesheet data and non-secret preferences
+only — your GitHub token and Anthropic API key are **never** included.
+
+### Using it from a computer (Windows / Mac)
+
+The app works in any modern browser, so a second (or third) device just needs a
+one-time setup:
+
+1. Open your hosted URL (e.g. the GitHub Pages address) in Edge or Chrome.
+2. Open **Settings ⚙** and enter your GitHub token + `owner/repo`
+   (and your Anthropic API key if you use the AI features), then **Pull**.
+3. *(Optional)* Install it as an app: Edge → **⋯ → Apps → Install this site as
+   an app** (Chrome: **Install page as app**) to get its own window and
+   taskbar icon.
+
+Keys are stored per browser profile, so each device needs them entered once —
+keep both in a password manager. After that, GitHub sync keeps every device on
+the same data, and the app warns you if two devices edit the same file
+concurrently.
 
 ---
 
@@ -112,7 +130,12 @@ load.
   the Anthropic API (AI expansion) and the GitHub API (sync). The app also loads
   the SheetJS library and IBM Plex fonts from CDNs.
 - Your API key and GitHub token never leave your device except to their
-  respective services. Treat the exported backup JSON as sensitive.
+  respective services. They are stripped from the GitHub-synced
+  `timesheet-data.json` (each device keeps its own copy locally), but they
+  **are** included in exported backup JSON files — treat backups as sensitive.
+- On startup the app requests [persistent storage](https://developer.mozilla.org/en-US/docs/Web/API/StorageManager/persist)
+  so the browser is less likely to auto-evict your local data under storage
+  pressure. GitHub sync remains the real safety net if storage is ever cleared.
 
 ---
 
