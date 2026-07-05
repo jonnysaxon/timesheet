@@ -1734,8 +1734,17 @@ async function clearWeek() {
 
 var GH_FILE = 'timesheet-data.json';
 var ghSyncTimer = null; // kept for safety net only
-var ghLastSha = null; // cached SHA needed for updates
-var ghDirty = false;  // true when local state is ahead of GitHub
+// Both persisted per-device (never synced) so a restart remembers whether local
+// state is ahead of GitHub — the startup sync uses this to push instead of pull.
+var GH_DIRTY_KEY = 'timesheet_ghDirty', GH_SHA_KEY = 'timesheet_ghSha';
+var ghLastSha = localStorage.getItem(GH_SHA_KEY) || null; // SHA our local state is based on
+var ghDirty = localStorage.getItem(GH_DIRTY_KEY) === '1'; // true when local state is ahead of GitHub
+
+function setGhLastSha(sha) {
+  ghLastSha = sha || null;
+  if(sha) localStorage.setItem(GH_SHA_KEY, sha);
+  else localStorage.removeItem(GH_SHA_KEY);
+}
 
 function ghConfigured() {
   return !!(state.settings.ghToken && state.settings.ghRepo);
@@ -1782,12 +1791,14 @@ function schedulePush() {
 function markDirty() {
   if(!ghConfigured()) return;
   ghDirty=true;
+  localStorage.setItem(GH_DIRTY_KEY,'1');
   setSyncStatus('dirty','Unsynced changes');
   var btn=document.getElementById('syncBtn');
   if(btn){ btn.style.display=''; btn.classList.add('dirty'); btn.innerHTML='&#8593; Sync'; btn.disabled=false; }
 }
 function markClean(timeStr) {
   ghDirty=false;
+  localStorage.removeItem(GH_DIRTY_KEY);
   setSyncStatus('ok','Synced '+(timeStr||''));
   var btn=document.getElementById('syncBtn');
   if(btn){ btn.classList.remove('dirty'); btn.innerHTML='&#10003; Synced'; }
@@ -1824,7 +1835,7 @@ async function ghPush(opts) {
       throw new Error(e.message||'HTTP '+res.status);
     }
     var data=await res.json();
-    if(data.content&&data.content.sha) ghLastSha=data.content.sha;
+    if(data.content&&data.content.sha) setGhLastSha(data.content.sha);
     markClean(new Date().toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'}));
   } catch(err) {
     if(err.conflict) markDirty(); // leave local marked unsynced, don't flag an error
@@ -1857,7 +1868,7 @@ async function ghPullNow() {
     }
     if(!res.ok){ var e=await res.json().catch(function(){return{};}); throw new Error(e.message||'HTTP '+res.status); }
     var data=await res.json();
-    ghLastSha=data.sha;
+    setGhLastSha(data.sha);
     var json=JSON.parse(decodeURIComponent(escape(atob(data.content.split('\n').join('')))));
     if(!json.jobs) throw new Error('Unrecognised data format');
     // Read settings directly from localStorage — source of truth for credentials.
@@ -1879,7 +1890,11 @@ async function ghPullNow() {
     pulledState.settings = merged;
     state = repairWeekJobs(pulledState);
     saveState(); render();
-    setGhStatus('Pulled successfully at '+new Date().toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'}));
+    var pulledAt=new Date().toLocaleTimeString('en-NZ',{hour:'2-digit',minute:'2-digit'});
+    // saveState() above marks the app dirty via schedulePush; a pull means local
+    // now matches GitHub, so explicitly mark clean (also clears persisted flag)
+    markClean(pulledAt);
+    setGhStatus('Pulled successfully at '+pulledAt);
     setSyncStatus('ok','GitHub sync on');
   } catch(err) {
     setGhStatus('Pull failed: '+err.message);
@@ -2289,7 +2304,11 @@ function saveSettings() {
   var aiSel = document.getElementById('inputAiModel').value;
   state.settings.aiModel = aiSel==='__custom__' ? document.getElementById('inputAiModelCustom').value.trim() : aiSel;
   state.settings.appUrl  = document.getElementById('inputAppUrl').value.trim();
-  state.settings.ghRepo  = document.getElementById('inputGhRepo').value.trim();
+  var newRepo = document.getElementById('inputGhRepo').value.trim();
+  // Repo changed: the persisted SHA belongs to the old repo's data file and
+  // would spuriously conflict against the new one
+  if(newRepo !== (state.settings.ghRepo||'')) setGhLastSha(null);
+  state.settings.ghRepo  = newRepo;
   saveState(); closeModal('settingsModal'); render(); updateSyncIndicator();
 }
 function checkForUpdate() {
@@ -2442,8 +2461,15 @@ render();
 setTimeout(positionTabIndicator,0);
 appBooting = false; // allow GitHub pushes from now on
 updateSyncIndicator();
-// Pull latest data from GitHub on startup if configured
-if(ghConfigured()){ ghPullNow().catch(function(e){ setSyncStatus('err',e.message); }); }
+// Sync with GitHub on startup if configured. If the last session left unsynced
+// local changes (persisted ghDirty flag — e.g. the auto-push on close never
+// completed), push them instead of pulling: an unconditional pull would clobber
+// them with the older GitHub copy. ghPushNow() conflict-checks against the
+// persisted ghLastSha and asks the user if another device pushed meanwhile.
+if(ghConfigured()){
+  if(ghDirty){ ghPushNow(); }
+  else { ghPullNow().catch(function(e){ setSyncStatus('err',e.message); }); }
+}
 // Safety net: auto-push if there are unsynced changes when user leaves the app
 document.addEventListener('visibilitychange', function() {
   if(document.visibilityState==='hidden' && ghDirty && ghConfigured() && Date.now() > suppressVisibilityPush) {
