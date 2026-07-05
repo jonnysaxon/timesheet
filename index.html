@@ -1750,6 +1750,11 @@ function ghConfigured() {
   return !!(state.settings.ghToken && state.settings.ghRepo);
 }
 
+// True when local state holds real timesheet data (vs a fresh/blank device).
+function stateHasData() {
+  return !!(state.jobs.length || Object.keys(state.entries).length || Object.keys(state.hours).length);
+}
+
 function ghApiUrl() {
   return 'https://api.github.com/repos/'+state.settings.ghRepo+'/contents/'+GH_FILE;
 }
@@ -1813,9 +1818,11 @@ async function ghPush(opts) {
   setSyncStatus('busy','Saving...');
   try {
     var remoteSha = await ghRemoteSha();
-    // Conflict: remote changed since our last sync, and we're not forcing.
-    // (ghLastSha null = this device hasn't synced yet, so nothing to conflict with.)
-    if(!opts.force && remoteSha && ghLastSha && remoteSha !== ghLastSha){
+    // Conflict: the remote file exists and isn't the copy our local state is
+    // based on. That includes ghLastSha null (this device has never synced) —
+    // a fresh device must never blind-overwrite existing remote data; it has
+    // to pull first or the user must explicitly choose Overwrite (force).
+    if(!opts.force && remoteSha && remoteSha !== ghLastSha){
       var conflict = new Error('Remote has newer changes');
       conflict.conflict = true;
       throw conflict;
@@ -1913,11 +1920,18 @@ async function ghPushNow() {
   } catch(err) {
     if(btn){ btn.disabled=false; btn.innerHTML='&#8593; Sync'; }
     if(err.conflict){
-      setGhStatus('Conflict: another device synced more recently.');
-      var overwrite = await appConfirm(
-        'This device has changes, but GitHub has newer changes from another device.\n\n'+
-        'Pull (recommended) replaces this device\'s unsynced changes with the GitHub copy.\n'+
-        'Overwrite forces your changes onto GitHub, discarding the other device\'s changes.',
+      // ghLastSha null = this device has never synced with this repo, so the
+      // "conflict" is really a first sync against existing remote data.
+      var firstSync = !ghLastSha;
+      setGhStatus(firstSync ? 'GitHub already has timesheet data.' : 'Conflict: another device synced more recently.');
+      var msg = firstSync
+        ? 'This device hasn\'t synced with this GitHub repo yet, but GitHub already has timesheet data.\n\n'+
+          'Pull (recommended) loads the GitHub copy onto this device.\n'+
+          'Overwrite replaces the GitHub data with this device\'s data.'
+        : 'This device has changes, but GitHub has newer changes from another device.\n\n'+
+          'Pull (recommended) replaces this device\'s unsynced changes with the GitHub copy.\n'+
+          'Overwrite forces your changes onto GitHub, discarding the other device\'s changes.';
+      var overwrite = await appConfirm(msg,
         {title:'Sync conflict', okText:'Overwrite GitHub', cancelText:'Pull instead', danger:true});
       if(overwrite){
         try {
@@ -2310,6 +2324,15 @@ function saveSettings() {
   if(newRepo !== (state.settings.ghRepo||'')) setGhLastSha(null);
   state.settings.ghRepo  = newRepo;
   saveState(); closeModal('settingsModal'); render(); updateSyncIndicator();
+  // First sync: GitHub just became configured (or was pointed at a new repo)
+  // on a device that has never synced with it. Never leave a dirty flag armed
+  // to blind-push — a blank device pulls the existing data down; a device with
+  // local data goes through the conflict-checked push (which asks the user if
+  // the repo already has data, or initialises an empty repo).
+  if(ghConfigured() && !ghLastSha){
+    if(stateHasData()) ghPushNow();
+    else ghPullNow();
+  }
 }
 function checkForUpdate() {
   var url=document.getElementById('inputAppUrl').value.trim()||state.settings.appUrl;
