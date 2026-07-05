@@ -149,6 +149,7 @@ concurrently.
 | `icons/` | App icons: `icon-192.png`, `icon-512.png` (standard), `icon-maskable-192.png`, `icon-maskable-512.png` (Android adaptive/maskable), `apple-touch-icon.png` (iOS, 180px), `favicon.ico` + `favicon-32.png` (browser tab), the `master-icon-1024.png` raster master, and `icon.svg` / `icon-maskable.svg` vector sources. |
 | `timesheet.html` | Redirect stub to `index.html` (kept so old bookmarks/links still work). |
 | `version.txt` | **The single source of truth for the app version.** Fetched at runtime to display the version and drive the update banner. |
+| `AZURE-ARCHITECTURE.md` | Future option (not implemented): design + pros/cons for moving hosting and API keys behind an Azure Static Web Apps backend. |
 | `CLAUDE.md` | Guidance for AI coding agents working in this repo. |
 
 ### Versioning & updates

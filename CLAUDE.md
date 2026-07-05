@@ -23,6 +23,7 @@ the user explicitly asks. Keep the "open the file and it runs" property intact.
 | `version.txt` | **Single source of truth for the version.** Fetched at runtime to display the version and drive the update banner. The app no longer hard-codes a version string. |
 | `README.md` | Human-facing docs. |
 | `IMPROVEMENTS.md` | Backlog of suggested improvements, with ✅ Done markers. |
+| `AZURE-ARCHITECTURE.md` | Deferred future option: Azure Static Web Apps backend design with pros/cons. **Not implemented** — don't build any backend/Azure pieces unless the user explicitly asks. |
 | `.gitignore` | Ignores OS/editor cruft and local data exports. |
 
 When changing app behavior, edit `index.html`. To release, bump the version in
