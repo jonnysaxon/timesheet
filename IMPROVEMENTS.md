@@ -5,7 +5,8 @@ the app works as-is — but each would make it more robust or easier to maintain
 Roughly ordered by effort-to-value.
 
 **Status:** items 1, 2, 4, 5, 6, 7, 8, and 9 are ✅ Done (1 in `v1.7.0`, 5 in
-`v1.4.0`, the rest in `v1.3.x`). Item 3 remains open (optional).
+`v1.4.0`, the rest in `v1.3.x`). Item 3 remains open (optional), and item 10
+(Azure backend) is deliberately deferred — see `AZURE-ARCHITECTURE.md`.
 
 **`v1.4.2`** — replaced the top-left clock emoji in the header with the JTS app
 icon (`.header-logo`). Also removed a "MASTER ICON (1024x1024)" caption that was
@@ -203,6 +204,17 @@ Much of the markup uses inline styles. Moving these into the existing
   display rows, removing the largest repeated inline-style blocks. (A full sweep
   of every remaining inline style is still possible but lower value; the
   highest-duplication cases are now done.)
+
+### 10. Azure Static Web Apps backend (deferred)
+Move hosting to Azure Static Web Apps and put the GitHub token + Anthropic API
+key behind managed Azure Functions (`/api/timesheet`, `/api/ai/*`), with
+GitHub/Microsoft sign-in instead of per-device key entry.
+- **Why deferred:** v1.7.2 already fixed the real security bug (credentials are
+  no longer synced to GitHub), and multi-device use works today with a one-time
+  key entry per device. The backend mainly buys sign-in-based recovery, at the
+  cost of a permanently more complex system and periodic re-sign-ins on iOS.
+- **Action if revisited:** full design, pros/cons, and migration plan live in
+  [`AZURE-ARCHITECTURE.md`](AZURE-ARCHITECTURE.md).
 
 ---
 
