@@ -110,6 +110,14 @@ state = { jobs, entries, hours, rollbacks, weekJobs, onCall, settings, aiSummari
   the remote has moved; `ghPushNow()` then asks the user to overwrite or pull.
   Pass `ghPush({force:true})` to skip the check. Still effectively last-write-wins
   *after* the user's explicit choice (no field-level merge).
+  **New-device guard (v1.7.4 data-loss fix — don't regress):** the conflict
+  check also fires when `ghLastSha` is null but the remote file exists — a
+  device that has never synced must never blind-push over existing remote data
+  (a fresh laptop's blank state used to clobber the real timesheet). Related:
+  `saveSettings()` runs a first sync whenever GitHub is configured and
+  `ghLastSha` is null — blank device → `ghPullNow()` (pulls existing data, or
+  initialises an empty repo), device with local data → `ghPushNow()` (which
+  conflict-checks and shows the first-sync pull-vs-overwrite dialog).
   **Startup-sync invariants (v1.7.3 data-loss fix — don't regress):**
   `ghDirty` / `ghLastSha` are persisted per-device (`timesheet_ghDirty` /
   `timesheet_ghSha`, written via `markDirty`/`markClean`/`setGhLastSha`) so a
