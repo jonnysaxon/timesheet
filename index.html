@@ -26,6 +26,7 @@
   --day-bg:var(--surface2);--day-border:var(--border);
   --day-we-bg:#181b28;--day-we-border:#252838;
   --oncall-bg:rgba(167,139,250,.12);--oncall-border:rgba(167,139,250,.5);
+  --ooh-bg:rgba(245,158,11,.07);--ooh-soft:rgba(245,158,11,.14);--ooh-border:rgba(245,158,11,.4);
   --shadow-1:0 1px 2px rgba(0,0,0,.25);
   --shadow-2:0 4px 12px rgba(0,0,0,.35);
   --shadow-3:0 12px 32px rgba(0,0,0,.5);
@@ -41,6 +42,7 @@ body.light {
   --day-bg:#f5f6fc;--day-border:#d0d4e8;
   --day-we-bg:#ebebf5;--day-we-border:#c8cce0;
   --oncall-bg:rgba(124,58,237,.08);--oncall-border:rgba(124,58,237,.4);
+  --ooh-bg:rgba(217,119,6,.06);--ooh-soft:rgba(217,119,6,.12);--ooh-border:rgba(217,119,6,.45);
   --shadow-1:0 1px 2px rgba(15,23,42,.08);
   --shadow-2:0 4px 14px rgba(15,23,42,.10);
   --shadow-3:0 12px 32px rgba(15,23,42,.18);
@@ -122,6 +124,14 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 @media(max-width:500px){.days-grid{grid-template-columns:1fr 1fr;}}
 .day-label{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;display:flex;align-items:center;gap:5px;}
 .day-date-sub{font-size:9px;color:var(--text3);font-weight:400;}
+.day-copy-btn{margin-left:auto;background:none;border:1px solid var(--border);border-radius:5px;color:var(--text3);font-family:var(--mono);font-size:10px;line-height:1;padding:3px 6px;cursor:pointer;text-transform:none;letter-spacing:0;}
+.day-copy-btn:hover{color:var(--accent);border-color:rgba(79,142,247,.4);}
+.day-copy-btn.copied{color:var(--green);border-color:rgba(34,197,94,.45);}
+.ooh-card{border-color:var(--ooh-border);background-color:var(--surface);background-image:linear-gradient(var(--ooh-bg),var(--ooh-bg));}
+.ooh-tag{font-family:var(--mono);font-size:10px;font-weight:600;line-height:1.25;color:var(--amber);background:var(--ooh-soft);border:1px solid var(--ooh-border);padding:3px 7px;border-radius:5px;letter-spacing:.03em;white-space:nowrap;}
+.job-week-total.ooh{color:var(--amber);background:var(--ooh-soft);border-color:var(--ooh-border);}
+.btn-ooh{background:var(--ooh-soft);border:1px solid var(--ooh-border);color:var(--amber);font-weight:600;}
+.btn-ooh:hover{background:var(--ooh-border);}
 .day-input{width:100%;background:var(--day-bg);border:1px solid var(--day-border);border-radius:7px;color:var(--text);font-family:var(--sans);font-size:12px;padding:8px 10px;resize:vertical;min-height:70px;transition:border-color .15s,box-shadow .15s;line-height:1.5;}
 .day-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring);}
 .day-input::placeholder{color:var(--text3);font-size:11px;}
@@ -134,6 +144,8 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 .day-weekend .day-label{opacity:.55;}
 .day-weekend .day-input{background:var(--day-we-bg);border-color:var(--day-we-border);}
 .day-weekend .hours-input{background:var(--day-we-bg);border-color:var(--day-we-border);}
+.ooh-card .day-input,.ooh-card .hours-input{background:var(--ooh-bg);border-color:var(--ooh-border);}
+.ooh-card .hours-input.has-value{color:var(--amber);}
 .day-on-call .day-input{background:var(--oncall-bg);border-color:var(--oncall-border);}
 .day-on-call .hours-input{background:var(--oncall-bg);border-color:var(--oncall-border);}
 .day-on-call .day-label{color:var(--purple);opacity:1;}
@@ -161,6 +173,14 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 .hours-table tfoot td.col-job{color:var(--text3);}
 .hours-table .row-total{color:var(--purple);font-weight:600;background:rgba(167,139,250,.06);}
 .hours-table tfoot .row-total{color:var(--amber);background:rgba(245,158,11,.08);}
+.hours-table tr.ooh-row td{background:var(--ooh-bg);}
+.hours-table tr.ooh-row td.col-job{color:var(--amber);}
+.hours-table tr.ooh-row td.has-hours{color:var(--amber);}
+.hours-split{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;font-family:var(--mono);font-size:11px;font-weight:600;}
+.hours-split span{padding:4px 9px;border-radius:6px;border:1px solid var(--border);background:var(--surface);}
+.hours-split .n{color:var(--green);border-color:rgba(34,197,94,.3);}
+.hours-split .o{color:var(--amber);border-color:var(--ooh-border);background:var(--ooh-soft);}
+.hours-split .t{color:var(--purple);}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}
 .modal-overlay.open{display:flex;}
 .modal{background-color:var(--surface);background-image:var(--card-grad);border:1px solid var(--border);border-radius:14px;padding:24px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-3);}
@@ -201,6 +221,30 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 .proj-hours .sub{font-size:8.5px;font-weight:500;color:var(--text3);line-height:1.15;}
 .proj-hours .left.ok{color:var(--green);}
 .proj-hours .left.over{color:var(--red);}
+.proj-hours .ooh{font-size:9px;font-weight:600;color:var(--amber);}
+.proj-toggle{grid-column:1/-1;background:none;border:none;border-top:1px dashed var(--border);padding:6px 0 0;color:var(--text2);font-family:var(--sans);font-size:11px;text-align:left;cursor:pointer;}
+.proj-toggle:hover{color:var(--text);}
+.proj-details{grid-column:1/-1;display:flex;flex-direction:column;gap:10px;padding-top:4px;}
+.proj-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;}
+@media(max-width:560px){.proj-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}}
+.proj-kpi{border:1px solid var(--border);border-radius:7px;padding:6px 8px;background:var(--day-bg);min-width:0;}
+.proj-kpi .k{font-family:var(--mono);font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);}
+.proj-kpi .v{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--text);}
+.proj-kpi.ooh{border-color:var(--ooh-border);background:var(--ooh-bg);}
+.proj-kpi.ooh .v{color:var(--amber);}
+.claim-bar{height:7px;border-radius:4px;background:var(--surface2);display:flex;overflow:hidden;}
+.claim-bar i{display:block;height:100%;}
+.claim-legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:5px;font-family:var(--mono);font-size:10px;color:var(--text2);}
+.claim-legend span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;background:var(--c);}
+.ooh-log{border:1px solid var(--border);border-radius:7px;overflow:hidden;}
+.ooh-log-row{display:grid;grid-template-columns:88px minmax(0,1fr) 44px 112px;gap:8px;padding:6px 9px;font-size:11.5px;border-bottom:1px solid var(--border);align-items:center;}
+.ooh-log-row:last-child{border-bottom:none;}
+.ooh-log-row .dt{font-family:var(--mono);font-size:10.5px;color:var(--text2);}
+.ooh-log-row .tx{min-width:0;overflow-wrap:anywhere;white-space:pre-wrap;}
+.ooh-log-row .hh{font-family:var(--mono);color:var(--amber);text-align:right;}
+.ooh-log-row select{width:100%;font-family:var(--mono);font-size:10.5px;background:var(--day-bg);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:2px 3px;}
+@media(max-width:560px){.ooh-log-row{grid-template-columns:76px minmax(0,1fr) 40px;}.ooh-log-row .cl{grid-column:2/-1;}}
+.ooh-overview{font-family:var(--mono);font-size:11px;color:var(--amber);background:var(--ooh-soft);border:1px solid var(--ooh-border);border-radius:8px;padding:7px 10px;margin-bottom:8px;}
 .proj-actions{grid-area:actions;display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;align-self:end;}
 .proj-actions .btn{padding:4px 8px;font-size:10px;border-radius:6px;line-height:1.2;}
 @media(max-width:640px){.proj-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"main hours" "meta actions";padding:9px 10px;column-gap:7px;row-gap:5px;}.proj-hours{min-width:92px}.proj-code{font-size:11.5px}.proj-desc{font-size:10.5px}.proj-actions .btn{padding:4px 8px;}}
@@ -597,9 +641,14 @@ var editingJobId = null;
 var pendingWeekChanges = false; // true when user has added/removed jobs on a no-hours week
 
 /* ─── STATE ─── */
-function fresh()          { return {jobs:[],entries:{},hours:{},rollbacks:{},weekJobs:{},onCall:[],settings:{},aiSummaries:[]}; }
+function fresh()          { return {jobs:[],entries:{},hours:{},oohEntries:{},oohHours:{},oohClaims:{},rollbacks:{},weekJobs:{},onCall:[],settings:{},aiSummaries:[]}; }
 function ensureFields(s)  {
   if(!s.hours)s.hours={};
+  // Out-of-hours maps mirror entries/hours with the same key formats; oohClaims
+  // is keyed like entries (jobId__YYYY-MM-DD__day) with 'ot' | 'toil'.
+  if(!s.oohEntries)s.oohEntries={};
+  if(!s.oohHours)s.oohHours={};
+  if(!s.oohClaims)s.oohClaims={};
   if(!s.rollbacks)s.rollbacks={};
   if(!s.weekJobs)s.weekJobs={};
   if(!Array.isArray(s.onCall))s.onCall=[];
@@ -632,6 +681,8 @@ function repairWeekJobs(s) {
   }
   collect(s.entries);
   collect(s.hours);
+  collect(s.oohEntries);
+  collect(s.oohHours);
 
   // STRICT "saved or no entry" rule: only keep weekJobs entries for weeks
   // that have actual entries/hours data. All other entries are removed
@@ -675,8 +726,8 @@ function localDateKey(d)  {
 function weekKey(ws)      { return localDateKey(ws); }
 function formatDate(d)    { return d.toLocaleDateString('en-NZ',{day:'2-digit',month:'short'}); }
 function isToday(d)       { var t=new Date(); return d.getDate()===t.getDate()&&d.getMonth()===t.getMonth()&&d.getFullYear()===t.getFullYear(); }
-function changeWeek(dir)  { currentWeekStart=new Date(currentWeekStart); currentWeekStart.setDate(currentWeekStart.getDate()+dir*7); clearDraft(); render(); }
-function goToToday()      { currentWeekStart=getWeekStart(new Date()); clearDraft(); render(); }
+function changeWeek(dir)  { currentWeekStart=new Date(currentWeekStart); currentWeekStart.setDate(currentWeekStart.getDate()+dir*7); clearDraft(); oohOpened={}; render(); }
+function goToToday()      { currentWeekStart=getWeekStart(new Date()); clearDraft(); oohOpened={}; render(); }
 
 /* ─── ON-CALL (Tue→Tue, 7-day spans anchored at the start Tuesday) ─── */
 // state.onCall is a sorted list of start-Tuesday ISO strings. Each span covers
@@ -730,58 +781,148 @@ async function toggleOnCall() {
 /* ─── ENTRY / HOURS (named day keys) ─── */
 function eKey(jid,ws,day) { return jid+'__'+weekKey(ws)+'__'+day; }
 function hKey(jid,ws,day) { return 'h__'+jid+'__'+weekKey(ws)+'__'+day; }
-function getEntry(jid,day)     { return state.entries[eKey(jid,currentWeekStart,day)]||''; }
-function setEntry(jid,day,val) {
+// ooh (truthy) selects the out-of-hours maps; omitted = normal hours.
+function entMap(ooh) { return ooh?state.oohEntries:state.entries; }
+function hrsMap(ooh) { return ooh?state.oohHours:state.hours; }
+function getEntry(jid,day,ooh)     { return entMap(ooh)[eKey(jid,currentWeekStart,day)]||''; }
+function setEntry(jid,day,val,ooh) {
   var visibleIds = getJobsForCurrentWeek();
   var k = eKey(jid,currentWeekStart,day);
-  if(!val || val.trim()==='') delete state.entries[k];
-  else state.entries[k]=val;
+  if(!val || val.trim()==='') delete entMap(ooh)[k];
+  else entMap(ooh)[k]=val;
+  if(ooh) pruneOohClaim(k);
   persistCurrentWeekIfHasData(visibleIds);
   saveState();
 }
-function getHours(jid,day)     { return state.hours[hKey(jid,currentWeekStart,day)]||''; }
-function setHours(jid,day,val) {
+function getHours(jid,day,ooh)     { return hrsMap(ooh)[hKey(jid,currentWeekStart,day)]||''; }
+function setHours(jid,day,val,ooh) {
   var visibleIds = getJobsForCurrentWeek();
   var v=parseFloat(val);
-  if(!val||isNaN(v)||v===0) delete state.hours[hKey(jid,currentWeekStart,day)];
-  else state.hours[hKey(jid,currentWeekStart,day)]=String(v);
+  if(!val||isNaN(v)||v===0) delete hrsMap(ooh)[hKey(jid,currentWeekStart,day)];
+  else hrsMap(ooh)[hKey(jid,currentWeekStart,day)]=String(v);
+  if(ooh) pruneOohClaim(eKey(jid,currentWeekStart,day));
   persistCurrentWeekIfHasData(visibleIds);
   saveState();
+}
+// Any data (normal or out-of-hours) for a job on one day of week wk.
+function dayHasHours(jid,wk,d) {
+  return (state.hours['h__'+jid+'__'+wk+'__'+d]||'') !== ''
+      || (state.oohHours['h__'+jid+'__'+wk+'__'+d]||'') !== '';
+}
+function dayHasEntry(jid,wk,d) {
+  return (state.entries[jid+'__'+wk+'__'+d]||'').trim() !== ''
+      || (state.oohEntries[jid+'__'+wk+'__'+d]||'').trim() !== '';
+}
+function dayHasData(jid,wk,d) { return dayHasEntry(jid,wk,d) || dayHasHours(jid,wk,d); }
+
+/* ─── OUT OF HOURS ─── */
+// Claim status per out-of-hours day: 'ot' (overtime), 'toil' (time in lieu), absent = not claimed.
+function getOohClaim(k) { return state.oohClaims[k]||''; }
+function setOohClaim(k,val) {
+  if(val==='ot'||val==='toil') state.oohClaims[k]=val;
+  else delete state.oohClaims[k];
+  saveState(); renderProjects();
+}
+function pruneOohClaim(k) {
+  if(!(state.oohEntries[k]||'').trim() && !state.oohHours['h__'+k]) delete state.oohClaims[k];
+}
+function jobHasOohThisWeek(jid) {
+  var wk=weekKey(currentWeekStart);
+  return DAYS.some(function(d){
+    return (state.oohEntries[jid+'__'+wk+'__'+d]||'').trim() !== ''
+        || (state.oohHours['h__'+jid+'__'+wk+'__'+d]||'') !== '';
+  });
+}
+// Out-of-hours cards the user opened this session but hasn't typed into yet (keyed wk|jid).
+var oohOpened = {};
+function isOohCardShown(jid) {
+  return jobHasOohThisWeek(jid) || !!oohOpened[weekKey(currentWeekStart)+'|'+jid];
+}
+function addOohCard(jid) {
+  oohOpened[weekKey(currentWeekStart)+'|'+jid]=true;
+  render();
+  var card=document.getElementById('card-ooh-'+jid);
+  if(card){ card.classList.add('open'); card.scrollIntoView({block:'nearest'}); }
+}
+function clearOohWeek(jid) {
+  var wk=weekKey(currentWeekStart);
+  DAYS.forEach(function(day){
+    var k=jid+'__'+wk+'__'+day;
+    delete state.oohEntries[k]; delete state.oohHours['h__'+k]; delete state.oohClaims[k];
+  });
+  delete state.rollbacks[rbKey(jid,currentWeekStart,true)];
+  delete oohOpened[wk+'|'+jid];
+}
+async function removeOohCard(jid) {
+  if(jobHasOohThisWeek(jid) && !await appConfirm('Remove the out-of-hours entries for this project from the current week? Normal entries are unaffected.',{title:'Remove out of hours',okText:'Remove'})) return;
+  clearOohWeek(jid);
+  saveState(); render();
+}
+// All out-of-hours days for a job (any week), newest first.
+function oohDaysForJob(jid) {
+  var re=/^(.+?)__(\d{4}-\d{2}-\d{2})__(sat|sun|mon|tue|wed|thu|fri)$/, seen={}, out=[];
+  function add(k){
+    var m=k.match(re);
+    if(!m||m[1]!==jid||seen[k]) return;
+    var text=(state.oohEntries[k]||'').trim(), h=parseFloat(state.oohHours['h__'+k]);
+    if(!text&&(isNaN(h)||h<=0)) return;
+    seen[k]=true;
+    out.push({key:k, wk:m[2], day:m[3], dateIso:localDateKey(dateFromWeekDay(m[2],m[3])), text:text, hours:isNaN(h)?0:h, claim:getOohClaim(k)});
+  }
+  Object.keys(state.oohEntries).forEach(add);
+  Object.keys(state.oohHours).forEach(function(k){ if(k.indexOf('h__')===0) add(k.slice(3)); });
+  out.sort(function(a,b){ return a.dateIso<b.dateIso?1:(a.dateIso>b.dateIso?-1:0); });
+  return out;
+}
+// Copy one day's text (not hours) to the device clipboard.
+function copyDayEntry(jid,day,ooh,btn) {
+  var ta=document.getElementById('entry-'+(ooh?'ooh-':'')+jid+'-'+day);
+  var text=ta?ta.value:getEntry(jid,day,ooh);
+  if(!text.trim()) return;
+  function done(){
+    btn.innerHTML='&#10003;'; btn.classList.add('copied');
+    setTimeout(function(){ btn.innerHTML='&#10697;'; btn.classList.remove('copied'); },1500);
+  }
+  function fallback(){ if(ta){ ta.focus(); ta.select(); } }
+  try { navigator.clipboard.writeText(text).then(done,fallback); } catch(e) { fallback(); }
 }
 
 /* ─── ROLLBACK ─── */
-function rbKey(jid,ws) { return 'rb__'+jid+'__'+weekKey(ws); }
-function saveRollback(jid) {
-  var snap={}; DAYS.forEach(function(d){ snap[d]=getEntry(jid,d); });
+// Out-of-hours rollbacks append '__ooh' so they never collide with the normal card's snapshot.
+function rbKey(jid,ws,ooh) { return 'rb__'+jid+'__'+weekKey(ws)+(ooh?'__ooh':''); }
+function saveRollback(jid,ooh) {
+  var snap={}; DAYS.forEach(function(d){ snap[d]=getEntry(jid,d,ooh); });
   if(!state.rollbacks) state.rollbacks={};
-  state.rollbacks[rbKey(jid,currentWeekStart)]=snap; saveState();
+  state.rollbacks[rbKey(jid,currentWeekStart,ooh)]=snap; saveState();
 }
-function getRollback(jid)   { return (state.rollbacks&&state.rollbacks[rbKey(jid,currentWeekStart)])||null; }
-function clearRollback(jid) { if(state.rollbacks){ delete state.rollbacks[rbKey(jid,currentWeekStart)]; saveState(); } }
-async function rollbackAI(jid) {
-  var snap=getRollback(jid); if(!snap) return;
+function getRollback(jid,ooh)   { return (state.rollbacks&&state.rollbacks[rbKey(jid,currentWeekStart,ooh)])||null; }
+function clearRollback(jid,ooh) { if(state.rollbacks){ delete state.rollbacks[rbKey(jid,currentWeekStart,ooh)]; saveState(); } }
+async function rollbackAI(jid,ooh) {
+  var snap=getRollback(jid,ooh); if(!snap) return;
   if(!await appConfirm('Restore all entries to their pre-AI state?',{title:'Rollback AI',okText:'Restore',danger:false})) return;
-  DAYS.forEach(function(d){ setEntry(jid,d,snap[d]||''); });
-  clearRollback(jid); render();
+  DAYS.forEach(function(d){ setEntry(jid,d,snap[d]||'',ooh); });
+  clearRollback(jid,ooh); render();
 }
 
 /* ─── WEEK TOTAL ─── */
-function jobWeekTotal(jid) {
-  return DAYS.reduce(function(s,d){ var h=parseFloat(getHours(jid,d)); return s+(isNaN(h)?0:h); },0);
+function jobWeekTotal(jid,ooh) {
+  return DAYS.reduce(function(s,d){ var h=parseFloat(getHours(jid,d,ooh)); return s+(isNaN(h)?0:h); },0);
 }
 
-/* Total hours across ALL weeks for a job */
-function jobTotalHours(jid) {
+/* Total hours across ALL weeks for a job: normal + out-of-hours (both count toward the budget) */
+function sumJobHours(map,jid) {
   var prefix = 'h__'+jid+'__';
   var sum = 0;
-  Object.keys(state.hours||{}).forEach(function(k){
+  Object.keys(map||{}).forEach(function(k){
     if(k.indexOf(prefix)===0) {
-      var v = parseFloat(state.hours[k]);
+      var v = parseFloat(map[k]);
       if(!isNaN(v)) sum+=v;
     }
   });
   return sum;
 }
+function jobOohHours(jid)   { return sumJobHours(state.oohHours,jid); }
+function jobTotalHours(jid) { return sumJobHours(state.hours,jid) + jobOohHours(jid); }
 function projectTotalHours(job) {
   var v = parseFloat(job.totalHours);
   return isNaN(v) || v <= 0 ? null : v;
@@ -834,11 +975,7 @@ function getJobsForCurrentWeek() {
   // Otherwise the list is computed live from the prior week each call,
   // possibly with the in-memory session draft layered on top.
   var hasHours = currentWeekHasHours();
-  var hasEntries = state.jobs.some(function(j){
-    return DAYS.some(function(d){
-      return (state.entries[eKey(j.id,currentWeekStart,d)]||'').trim() !== '';
-    });
-  });
+  var hasEntries = currentWeekHasEntries();
   var hasData = hasHours || hasEntries;
   var hasExplicitList = Array.isArray(state.weekJobs[wk]);
 
@@ -858,10 +995,7 @@ function getJobsForCurrentWeek() {
 
     if (hasData) {
       var jobsWithData = state.jobs.filter(function(j){
-        return DAYS.some(function(d){
-          return (state.entries[eKey(j.id,currentWeekStart,d)]||'').trim() !== ''
-              || (state.hours  [hKey(j.id,currentWeekStart,d)]||'')         !== '';
-        });
+        return DAYS.some(function(d){ return dayHasData(j.id,wk,d); });
       }).map(function(j){return j.id;});
       var missing = jobsWithData.filter(function(jid){ return validExplicit.indexOf(jid)<0; });
       validExplicit = validExplicit.concat(missing);
@@ -915,10 +1049,7 @@ function inheritJobsFromPriorWeek() {
 
     var jobsWithData = state.jobs.filter(function(j){
       if (!isJobOpen(j)) return false;
-      return DAYS.some(function(d){
-        return (state.entries[j.id+'__'+k+'__'+d]||'').trim() !== ''
-            || (state.hours  ['h__'+j.id+'__'+k+'__'+d]||'')        !== '';
-      });
+      return DAYS.some(function(d){ return dayHasData(j.id,k,d); });
     }).map(function(j){return j.id;});
     if (jobsWithData.length > 0) return jobsWithData;
   }
@@ -988,17 +1119,15 @@ function updateSaveBtn() {
   }
 }
 function currentWeekHasHours() {
+  var wk = weekKey(currentWeekStart);
   return state.jobs.some(function(j){
-    return DAYS.some(function(d){
-      return (state.hours[hKey(j.id,currentWeekStart,d)]||'') !== '';
-    });
+    return DAYS.some(function(d){ return dayHasHours(j.id,wk,d); });
   });
 }
 function currentWeekHasEntries() {
+  var wk = weekKey(currentWeekStart);
   return state.jobs.some(function(j){
-    return DAYS.some(function(d){
-      return (state.entries[eKey(j.id,currentWeekStart,d)]||'').trim() !== '';
-    });
+    return DAYS.some(function(d){ return dayHasEntry(j.id,wk,d); });
   });
 }
 function currentWeekHasData() {
@@ -1018,7 +1147,7 @@ function weekHasData(wk) {
       return v !== '' && v !== null && v !== undefined;
     });
   }
-  return has(state.entries) || has(state.hours);
+  return has(state.entries) || has(state.hours) || has(state.oohEntries) || has(state.oohHours);
 }
 function pruneFutureWeeksAfter(wk) {
   Object.keys(state.weekJobs||{}).forEach(function(k){
@@ -1125,62 +1254,79 @@ function renderJobs() {
       +'</div>';
     return;
   }
+  // Keep expanded cards expanded across re-renders (e.g. after adding an out-of-hours card).
+  var openIds=[].map.call(el.querySelectorAll('.job-card.open'),function(c){return c.id;});
   el.innerHTML=weekJobs.map(function(job){
-    var hasRB=!!getRollback(job.id);
-    var total=jobWeekTotal(job.id);
-    var totalBadge=total>0?'<span class="job-week-total">'+fmtH(total)+'h</span>':'';
-    var daysHtml=DAYS.map(function(day,i){
-      var val=getEntry(job.id,day), hrs=getHours(job.id,day);
-      var today=isToday(dates[i]), isWE=!!WEEKEND_SET[day];
-      var isOC=!!onCallSpanFor(localDateKey(dates[i]));
-      return '<div class="day-entry'+(isWE?' day-weekend':'')+(isOC?' day-on-call':'')+'">'
-        +'<div class="day-label">'+(today?'<span class="today-dot"></span>':'')+DAY_LABELS[i]
-        +'<span class="day-date-sub">'+formatDate(dates[i])+'</span></div>'
-        +'<textarea class="day-input'+(val?' has-value':'')+'" id="entry-'+job.id+'-'+day+'"'
-        +' placeholder="'+(isWE?'Weekend':'e.g. Meeting, RITM123')+'" rows="3"'
-        +' onchange="setEntry(\''+job.id+'\',\''+day+'\',this.value);this.classList.toggle(\'has-value\',this.value.trim().length>0);updateWeekTotalBadge(\''+job.id+'\')"'
-        +'>'+esc(val)+'</textarea>'
-        +'<div class="hours-input-wrap"><label>hrs</label>'
-        +'<input type="number" class="hours-input'+(hrs?' has-value':'')+'" id="hours-'+job.id+'-'+day+'"'
-        +' min="0" max="24" step="0.25" placeholder="0" value="'+esc(hrs)+'"'
-        +' onchange="setHours(\''+job.id+'\',\''+day+'\',this.value);this.classList.toggle(\'has-value\',parseFloat(this.value)>0);updateWeekTotalBadge(\''+job.id+'\')">'
-        +'</div></div>';
-    }).join('');
-    return '<div class="job-card" id="card-'+job.id+'">'
-      +'<div class="job-card-header" onclick="toggleCard(\''+job.id+'\')">'
-      +'<div class="job-card-main">'
-      +'<span class="job-code-badge">'+esc(job.code)+'</span>'
-      +(job.name?'<span class="job-name">'+esc(job.name)+'</span>':'')
-      +'</div>'
-      +totalBadge
-      +'<div class="job-card-actions" onclick="event.stopPropagation()">'
-      +'<button type="button" class="btn btn-secondary" style="padding:5px 10px;font-size:11px" onclick="openEditModal(\''+job.id+'\');return false" title="Edit job code">Edit</button>'
-      +'<button type="button" class="btn btn-danger" style="padding:5px 10px;font-size:11px;font-weight:600" onclick="deleteJobThisWeek(\''+job.id+'\');return false" title="Remove from this week only">Remove</button>'
-      +'<span class="chevron">&#9660;</span>'
-      +'</div></div>'
-      +'<div class="job-card-body">'
-      +'<div class="ai-toolbar">'
-      +'<button class="btn btn-ai" id="ai-btn-'+job.id+'" onclick="expandWithAI(\''+job.id+'\')"'+(state.settings.apiKey?'':' disabled title="Set API key in Settings"')+'>&#10022; AI Expand</button>'
-      +(hasRB?'<button class="btn btn-rollback" onclick="rollbackAI(\''+job.id+'\')">&#8617; Rollback AI</button>':'')
-      +'<span class="ai-status" id="ai-status-'+job.id+'"></span>'
-      +'</div>'
-      +'<div class="days-grid">'+daysHtml+'</div>'
-      +'</div></div>';
+    return renderJobCard(job,dates,false)+(isOohCardShown(job.id)?renderJobCard(job,dates,true):'');
   }).join('');
+  openIds.forEach(function(id){ var c=document.getElementById(id); if(c) c.classList.add('open'); });
 }
 
-function updateWeekTotalBadge(jid) {
-  var total=jobWeekTotal(jid);
-  var card=document.getElementById('card-'+jid); if(!card) return;
+// One Entry-tab card. ooh=true renders the linked out-of-hours card: element ids gain an
+// 'ooh-' prefix before the job id, and handlers pass ooh=1 through to the data layer.
+function renderJobCard(job,dates,ooh) {
+  var px=(ooh?'ooh-':'')+job.id, o=ooh?',1':'';
+  var hasRB=!!getRollback(job.id,ooh);
+  var total=jobWeekTotal(job.id,ooh);
+  var totalBadge=total>0?'<span class="job-week-total'+(ooh?' ooh':'')+'">'+fmtH(total)+'h</span>':'';
+  var daysHtml=DAYS.map(function(day,i){
+    var val=getEntry(job.id,day,ooh), hrs=getHours(job.id,day,ooh);
+    var today=isToday(dates[i]), isWE=!!WEEKEND_SET[day];
+    var isOC=!!onCallSpanFor(localDateKey(dates[i]));
+    return '<div class="day-entry'+(isWE?' day-weekend':'')+(isOC?' day-on-call':'')+'">'
+      +'<div class="day-label">'+(today?'<span class="today-dot"></span>':'')+DAY_LABELS[i]
+      +'<span class="day-date-sub">'+formatDate(dates[i])+'</span>'
+      +'<button type="button" class="day-copy-btn" onclick="copyDayEntry(\''+job.id+'\',\''+day+'\','+(ooh?'1':'0')+',this)" title="Copy this day\'s text" aria-label="Copy '+DAY_LABELS[i]+' text">&#10697;</button></div>'
+      +'<textarea class="day-input'+(val?' has-value':'')+'" id="entry-'+px+'-'+day+'"'
+      +' placeholder="'+(ooh?'e.g. Cutover, CHG123':(isWE?'Weekend':'e.g. Meeting, RITM123'))+'" rows="3"'
+      +' onchange="setEntry(\''+job.id+'\',\''+day+'\',this.value'+o+');this.classList.toggle(\'has-value\',this.value.trim().length>0);updateWeekTotalBadge(\''+job.id+'\''+o+')"'
+      +'>'+esc(val)+'</textarea>'
+      +'<div class="hours-input-wrap"><label>hrs</label>'
+      +'<input type="number" class="hours-input'+(hrs?' has-value':'')+'" id="hours-'+px+'-'+day+'"'
+      +' min="0" max="24" step="0.25" placeholder="0" value="'+esc(hrs)+'"'
+      +' onchange="setHours(\''+job.id+'\',\''+day+'\',this.value'+o+');this.classList.toggle(\'has-value\',parseFloat(this.value)>0);updateWeekTotalBadge(\''+job.id+'\''+o+')">'
+      +'</div></div>';
+  }).join('');
+  var actions=ooh
+    ? '<button type="button" class="btn btn-danger" style="padding:5px 10px;font-size:11px;font-weight:600" onclick="removeOohCard(\''+job.id+'\');return false" title="Remove out-of-hours entries from this week">Remove</button>'
+    : (isOohCardShown(job.id)?'':'<button type="button" class="btn btn-ooh" style="padding:5px 10px;font-size:11px" onclick="addOohCard(\''+job.id+'\');return false" title="Add out-of-hours entries for this project">+ Out of hours</button>')
+      +'<button type="button" class="btn btn-secondary" style="padding:5px 10px;font-size:11px" onclick="openEditModal(\''+job.id+'\');return false" title="Edit job code">Edit</button>'
+      +'<button type="button" class="btn btn-danger" style="padding:5px 10px;font-size:11px;font-weight:600" onclick="deleteJobThisWeek(\''+job.id+'\');return false" title="Remove from this week only">Remove</button>';
+  return '<div class="job-card'+(ooh?' ooh-card':'')+'" id="card-'+px+'">'
+    +'<div class="job-card-header" onclick="toggleCard(\''+px+'\')">'
+    +'<div class="job-card-main">'
+    +'<span class="job-code-badge">'+esc(job.code)+'</span>'
+    +(ooh?'<span class="ooh-tag">OUT OF HOURS</span>':'')
+    +(job.name?'<span class="job-name">'+esc(job.name)+'</span>':'')
+    +'</div>'
+    +totalBadge
+    +'<div class="job-card-actions" onclick="event.stopPropagation()">'
+    +actions
+    +'<span class="chevron">&#9660;</span>'
+    +'</div></div>'
+    +'<div class="job-card-body">'
+    +'<div class="ai-toolbar">'
+    +'<button class="btn btn-ai" id="ai-btn-'+px+'" onclick="expandWithAI(\''+job.id+'\''+o+')"'+(state.settings.apiKey?'':' disabled title="Set API key in Settings"')+'>&#10022; AI Expand</button>'
+    +(hasRB?'<button class="btn btn-rollback" onclick="rollbackAI(\''+job.id+'\''+o+')">&#8617; Rollback AI</button>':'')
+    +'<span class="ai-status" id="ai-status-'+px+'"></span>'
+    +'</div>'
+    +'<div class="days-grid">'+daysHtml+'</div>'
+    +'</div></div>';
+}
+
+function updateWeekTotalBadge(jid,ooh) {
+  var total=jobWeekTotal(jid,ooh);
+  var card=document.getElementById('card-'+(ooh?'ooh-':'')+jid); if(!card) return;
   var badge=card.querySelector('.job-week-total');
   if(total>0){
     if(badge){ badge.textContent=fmtH(total)+'h'; }
     else {
       var actions=card.querySelector('.job-card-actions');
-      if(actions){ var nb=document.createElement('span'); nb.className='job-week-total'; nb.textContent=fmtH(total)+'h'; actions.parentNode.insertBefore(nb,actions); }
+      if(actions){ var nb=document.createElement('span'); nb.className='job-week-total'+(ooh?' ooh':''); nb.textContent=fmtH(total)+'h'; actions.parentNode.insertBefore(nb,actions); }
     }
   } else { if(badge) badge.remove(); }
 }
+
 
 function fmtH(h) {
   if(h<=0) return '-';
@@ -1197,8 +1343,9 @@ function fmtProjectH(h) {
 function toggleCard(id) { document.getElementById('card-'+id).classList.toggle('open'); }
 
 async function deleteJobThisWeek(jid) {
-  if(!await appConfirm('Remove this job from the current week? Other weeks are unaffected.',{title:'Remove job',okText:'Remove'})) return;
+  if(!await appConfirm('Remove this job from the current week, including any out-of-hours entries? Other weeks are unaffected.',{title:'Remove job',okText:'Remove'})) return;
   DAYS.forEach(function(day){ delete state.entries[eKey(jid,currentWeekStart,day)]; delete state.hours[hKey(jid,currentWeekStart,day)]; });
+  clearOohWeek(jid);
   removeJobFromCurrentWeek(jid);
   saveState(); render();
 }
@@ -1210,27 +1357,44 @@ function renderSummary() {
   if(!state.jobs.length){ el.innerHTML='<div class="empty-state"><div class="icon">&#128202;</div>Add job codes and entries to see your summary.</div>'; return; }
   var html='';
   state.jobs.forEach(function(job){
-    var lines=[];
-    DAYS.forEach(function(day){ var v=getEntry(job.id,day).trim(); if(v) lines.push('#'+day+'\n'+v); });
-    if(!lines.length) return;
-    html+='<div class="summary-card"><div class="summary-card-header">'
-      +'<span class="job-code-badge">'+esc(job.code)+'</span>'
-      +(job.name?'<span style="color:var(--text2);font-size:12px">'+esc(job.name)+'</span>':'')
-      +'<button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;margin-left:auto" onclick="copyText(\'summary-'+job.id+'\',this)">Copy</button>'
-      +'</div><div class="summary-output" id="summary-'+job.id+'">'+fmtSummary(lines.join('\n\n'))+'</div></div>';
+    [false,true].forEach(function(ooh){
+      var lines=[], sid='summary-'+(ooh?'ooh-':'')+job.id;
+      DAYS.forEach(function(day){ var v=getEntry(job.id,day,ooh).trim(); if(v) lines.push('#'+day+'\n'+v); });
+      if(!lines.length) return;
+      html+='<div class="summary-card'+(ooh?' ooh-card':'')+'"><div class="summary-card-header">'
+        +'<span class="job-code-badge">'+esc(job.code)+'</span>'
+        +(ooh?'<span class="ooh-tag">OUT OF HOURS</span>':'')
+        +(job.name?'<span style="color:var(--text2);font-size:12px">'+esc(job.name)+'</span>':'')
+        +'<button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;margin-left:auto" onclick="copyText(\''+sid+'\',this)">Copy</button>'
+        +'</div><div class="summary-output" id="'+sid+'">'+fmtSummary(lines.join('\n\n'))+'</div></div>';
+    });
   });
   el.innerHTML=html||'<div class="empty-state"><div class="icon">&#9999;</div>No entries for this week yet.</div>';
 }
 function fmtSummary(t) { return esc(t).replace(/#(sat|sun|mon|tue|wed|thu|fri)/gi,'<span class="day-tag">#$1</span>'); }
 
 /* ─── HOURS SUMMARY ─── */
+// Week hour rows: each job's normal row, followed by its out-of-hours row when it has OOH hours.
+function hoursRows() {
+  var rows=[];
+  state.jobs.forEach(function(job){
+    [false,true].forEach(function(ooh){
+      var dh=DAYS.map(function(d){ var h=parseFloat(getHours(job.id,d,ooh)); return isNaN(h)?0:h; });
+      if(dh.some(function(h){return h>0;})) rows.push({job:job, ooh:ooh, dh:dh});
+    });
+  });
+  return rows;
+}
+function hoursSplit(rows) {
+  var n=0, o=0;
+  rows.forEach(function(r){ var t=r.dh.reduce(function(a,b){return a+b;},0); if(r.ooh) o+=t; else n+=t; });
+  return {normal:n, ooh:o};
+}
 function renderHoursSummary() {
   var el=document.getElementById('hoursSummaryList');
   if(!state.jobs.length){ el.innerHTML='<div class="empty-state"><div class="icon">&#128336;</div>Add job codes and hours to see summary.</div>'; return; }
   var dates=getWeekDates(currentWeekStart);
-  var rows=state.jobs.map(function(job){
-    return {job:job, dh:DAYS.map(function(d){ var h=parseFloat(getHours(job.id,d)); return isNaN(h)?0:h; })};
-  }).filter(function(r){return r.dh.some(function(h){return h>0;});});
+  var rows=hoursRows();
   if(!rows.length){ el.innerHTML='<div class="empty-state"><div class="icon">&#128336;</div>No hours entered for this week yet.</div>'; return; }
   var colTotals=DAYS.map(function(_,i){return rows.reduce(function(s,r){return s+r.dh[i];},0);});
   var weekTotal=colTotals.reduce(function(a,b){return a+b;},0);
@@ -1242,21 +1406,23 @@ function renderHoursSummary() {
     +'<th class="row-total" style="color:var(--purple)">Total</th></tr></thead><tbody>';
   rows.forEach(function(r){
     var rt=r.dh.reduce(function(a,b){return a+b;},0);
-    html+='<tr><td class="col-job">'+esc(r.job.code)+(r.job.name?'<br><span style="color:var(--text3);font-size:10px">'+esc(r.job.name)+'</span>':'')+'</td>'
+    html+='<tr'+(r.ooh?' class="ooh-row"':'')+'><td class="col-job">'+esc(r.job.code)+(r.ooh?' &middot; OOH':'')
+      +(r.ooh?'<br><span style="color:var(--text3);font-size:10px">Out of hours</span>':(r.job.name?'<br><span style="color:var(--text3);font-size:10px">'+esc(r.job.name)+'</span>':''))+'</td>'
       +r.dh.map(function(h,i){return '<td class="'+(h>0?'has-hours':'')+ocCls(i)+'">'+fmtH(h)+'</td>';}).join('')
       +'<td class="row-total">'+fmtH(rt)+'</td></tr>';
   });
   html+='</tbody><tfoot><tr><td class="col-job">Day Total</td>'
     +colTotals.map(function(h,i){return '<td class="'+ocCls(i).trim()+'">'+fmtH(h)+'</td>';}).join('')
     +'<td class="row-total">'+fmtH(weekTotal)+'</td></tr></tfoot></table></div>';
+  var split=hoursSplit(rows);
+  if(split.ooh>0) html+='<div class="hours-split"><span class="n">Normal '+fmtH(split.normal)+'h</span>'
+    +'<span class="o">Out of hours '+fmtH(split.ooh)+'h</span><span class="t">Total '+fmtH(weekTotal)+'h</span></div>';
   el.innerHTML=html;
 }
 
 function copyHoursSummary(btn) {
   var dates=getWeekDates(currentWeekStart);
-  var rows=state.jobs.map(function(job){
-    return {job:job, dh:DAYS.map(function(d){ var h=parseFloat(getHours(job.id,d)); return isNaN(h)?0:h; })};
-  }).filter(function(r){return r.dh.some(function(h){return h>0;});});
+  var rows=hoursRows();
   if(!rows.length){ alert('No hours to copy.'); return; }
   var colTotals=DAYS.map(function(_,i){return rows.reduce(function(s,r){return s+r.dh[i];},0);});
   var weekTotal=colTotals.reduce(function(a,b){return a+b;},0);
@@ -1266,10 +1432,12 @@ function copyHoursSummary(btn) {
   var div='-'.repeat(hdr.length);
   var lines=rows.map(function(r){
     var rt=r.dh.reduce(function(a,b){return a+b;},0);
-    return r.job.code.padEnd(cw)+r.dh.map(function(h){return (h>0?fmtH(h):'-').padStart(dw);}).join('')+'  '+fmtH(rt);
+    return (r.job.code+(r.ooh?' OOH':'')).padEnd(cw)+r.dh.map(function(h){return (h>0?fmtH(h):'-').padStart(dw);}).join('')+'  '+fmtH(rt);
   });
   var foot='Total'.padEnd(cw)+colTotals.map(function(h){return (h>0?fmtH(h):'-').padStart(dw);}).join('')+'  '+fmtH(weekTotal);
-  var text='Hours Summary - '+weekStr+'\n'+[hdr,div].concat(lines).concat([div,foot]).join('\n');
+  var split=hoursSplit(rows);
+  var tail=split.ooh>0?['','Normal '+fmtH(split.normal)+'h | Out of hours '+fmtH(split.ooh)+'h | Total '+fmtH(weekTotal)+'h']:[];
+  var text='Hours Summary - '+weekStr+'\n'+[hdr,div].concat(lines).concat([div,foot]).concat(tail).join('\n');
   navigator.clipboard.writeText(text).then(function(){
     var o=btn.innerHTML; btn.innerHTML='&#10003; Copied!'; btn.style.color='var(--green)';
     setTimeout(function(){btn.innerHTML=o;btn.style.color='';},1800);
@@ -1331,7 +1499,9 @@ function renderProjects() {
     var budget = projectTotalHours(j);
     var left = projectHoursLeft(j);
     var totalLabel = total>0 ? fmtH(total)+'h used' : '0h used';
-    var hoursHtml = '<div class="proj-hours"><span>'+totalLabel+'</span>';
+    var oohTotal = jobOohHours(j.id);
+    var hoursHtml = '<div class="proj-hours"><span>'+totalLabel+'</span>'
+      + (oohTotal>0 ? '<span class="ooh">incl. '+fmtH(oohTotal)+'h OOH</span>' : '');
     if (budget !== null) {
       hoursHtml += '<span class="sub">'+fmtProjectH(budget)+'h total</span>'
         + '<span class="sub left '+(left < 0 ? 'over' : 'ok')+'">'+fmtProjectH(Math.abs(left))+'h '+(left < 0 ? 'over' : 'left')+'</span>';
@@ -1356,8 +1526,61 @@ function renderProjects() {
         +(closedInfo?closedInfo:'')
       +'</div>'
       +'<div class="proj-actions">'+actions+'</div>'
+      +'<button type="button" class="proj-toggle" onclick="toggleProjDetails(\''+j.id+'\')" aria-expanded="'+(projDetailsOpen[j.id]?'true':'false')+'">'
+        +(projDetailsOpen[j.id]?'&#9662; Hide details':'&#9656; Details')+'</button>'
+      +(projDetailsOpen[j.id]?renderProjDetails(j):'')
       +'</div>';
   }).join('');
+  el.innerHTML = renderOohOverview() + el.innerHTML;
+}
+
+/* Project details: normal vs out-of-hours split and per-day claim tracking */
+var projDetailsOpen = {};
+function toggleProjDetails(jid) { projDetailsOpen[jid]=!projDetailsOpen[jid]; renderProjects(); }
+var OOH_CLAIM_LABELS = {'':'Not claimed', ot:'Overtime', toil:'Time in lieu'};
+function oohClaimTotals(days) {
+  var t={ot:0, toil:0, none:0};
+  days.forEach(function(d){ t[d.claim||'none']+=d.hours; });
+  return t;
+}
+function renderProjDetails(j) {
+  var days=oohDaysForJob(j.id);
+  var oohTotal=jobOohHours(j.id), normal=jobTotalHours(j.id)-oohTotal;
+  var thisWk=weekKey(getWeekStart(new Date()));
+  var weekOoh=days.reduce(function(s,d){ return s+(d.wk===thisWk?d.hours:0); },0);
+  var ct=oohClaimTotals(days);
+  function kpi(label,val,ooh){ return '<div class="proj-kpi'+(ooh?' ooh':'')+'"><div class="k">'+label+'</div><div class="v">'+fmtProjectH(val)+'</div></div>'; }
+  var html='<div class="proj-details">'
+    +'<div class="proj-kpis">'+kpi('Normal hours',normal)+kpi('Out of hours',oohTotal,true)+kpi('OOH this week',weekOoh,true)+kpi('Not yet claimed',ct.none,true)+'</div>';
+  if(!days.length){
+    return html+'<div class="form-hint">No out-of-hours time logged for this project yet. Use <b>+ Out of hours</b> on the Entry tab to add some.</div></div>';
+  }
+  if(oohTotal>0){
+    var pct=function(v){ return (v/oohTotal*100).toFixed(1)+'%'; };
+    html+='<div><div class="claim-bar" role="img" aria-label="Out of hours: '+fmtProjectH(ct.ot)+'h overtime, '+fmtProjectH(ct.toil)+'h time in lieu, '+fmtProjectH(ct.none)+'h not claimed">'
+      +'<i style="width:'+pct(ct.ot)+';background:var(--purple)"></i><i style="width:'+pct(ct.toil)+';background:var(--accent)"></i><i style="width:'+pct(ct.none)+';background:var(--amber)"></i></div>'
+      +'<div class="claim-legend"><span style="--c:var(--purple)">Overtime '+fmtProjectH(ct.ot)+'h</span><span style="--c:var(--accent)">Time in lieu '+fmtProjectH(ct.toil)+'h</span><span style="--c:var(--amber)">Not claimed '+fmtProjectH(ct.none)+'h</span></div></div>';
+  }
+  html+='<div class="ooh-log">'+days.map(function(d){
+    var date=dateFromWeekDay(d.wk,d.day);
+    var opts=['','ot','toil'].map(function(v){ return '<option value="'+v+'"'+(d.claim===v?' selected':'')+'>'+OOH_CLAIM_LABELS[v]+'</option>'; }).join('');
+    return '<div class="ooh-log-row">'
+      +'<span class="dt">'+DAY_LABELS[DAYS.indexOf(d.day)]+' '+formatDate(date)+(date.getFullYear()!==new Date().getFullYear()?' '+date.getFullYear():'')+'</span>'
+      +'<span class="tx">'+(d.text?esc(d.text):'<span style="color:var(--text3)">(no notes)</span>')+'</span>'
+      +'<span class="hh">'+(d.hours>0?fmtH(d.hours)+'h':'-')+'</span>'
+      +'<span class="cl"><select aria-label="Claimed as" onchange="setOohClaim(\''+d.key+'\',this.value)">'+opts+'</select></span>'
+      +'</div>';
+  }).join('')+'</div></div>';
+  return html;
+}
+// Out-of-hours across every project, shown above the project list when there is any.
+function renderOohOverview() {
+  var total=0, unclaimed=0;
+  state.jobs.forEach(function(j){
+    oohDaysForJob(j.id).forEach(function(d){ total+=d.hours; if(!d.claim) unclaimed+=d.hours; });
+  });
+  if(total<=0) return '';
+  return '<div class="ooh-overview">Out of hours, all projects: '+fmtH(total)+'h &middot; '+fmtProjectH(unclaimed)+'h not claimed</div>';
 }
 
 async function closeProject(jid) {
@@ -1386,6 +1609,9 @@ async function deleteProjectPermanently(jid) {
   state.jobs = state.jobs.filter(function(j){return j.id!==jid;});
   Object.keys(state.entries).forEach(function(k){if(k.indexOf(jid+'__')===0) delete state.entries[k];});
   Object.keys(state.hours).forEach(function(k){if(k.indexOf('h__'+jid+'__')===0) delete state.hours[k];});
+  Object.keys(state.oohEntries).forEach(function(k){if(k.indexOf(jid+'__')===0) delete state.oohEntries[k];});
+  Object.keys(state.oohHours).forEach(function(k){if(k.indexOf('h__'+jid+'__')===0) delete state.oohHours[k];});
+  Object.keys(state.oohClaims).forEach(function(k){if(k.indexOf(jid+'__')===0) delete state.oohClaims[k];});
   // Remove from weekJobs lists too
   Object.keys(state.weekJobs||{}).forEach(function(wk){
     if (Array.isArray(state.weekJobs[wk])) {
@@ -1405,17 +1631,18 @@ function copyText(elId,btn) {
 }
 
 /* ─── AI EXPAND ─── */
-async function expandWithAI(jid) {
+async function expandWithAI(jid,ooh) {
   var job=state.jobs.find(function(j){return j.id===jid;});
   var apiKey=state.settings.apiKey;
+  var px=(ooh?'ooh-':'')+jid;
   if(!apiKey){ alert('Set your Anthropic API key in Settings first.'); return; }
-  var entries=DAYS.map(function(day,i){return{day:day,label:DAY_LABELS[i],text:getEntry(jid,day).trim()};}).filter(function(e){return e.text;});
-  if(!entries.length){ setAIStatus(jid,'No entries to expand.','error'); return; }
-  saveRollback(jid);
-  var btn=document.getElementById('ai-btn-'+jid);
-  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Expanding...'; setAIStatus(jid,'');
+  var entries=DAYS.map(function(day,i){return{day:day,label:DAY_LABELS[i],text:getEntry(jid,day,ooh).trim()};}).filter(function(e){return e.text;});
+  if(!entries.length){ setAIStatus(px,'No entries to expand.','error'); return; }
+  saveRollback(jid,ooh);
+  var btn=document.getElementById('ai-btn-'+px);
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Expanding...'; setAIStatus(px,'');
   var role=state.settings.role||'IT professional';
-  var prompt='You are helping a '+role+' write professional timesheet comments.\nJob: '+job.code+(job.name?' ('+job.name+')':'')+'\n\nExpand each day\'s notes into a clear professional 1-3 sentence comment. Preserve ticket numbers exactly. Return ONLY this format with no preamble:\n\n#sat\n[text or blank]\n\n#sun\n[text or blank]\n\n#mon\n[text or blank]\n\n#tue\n[text or blank]\n\n#wed\n[text or blank]\n\n#thu\n[text or blank]\n\n#fri\n[text or blank]\n\nNotes:\n'+entries.map(function(e){return '#'+e.day+'\n'+e.text;}).join('\n\n');
+  var prompt='You are helping a '+role+' write professional timesheet comments.\nJob: '+job.code+(job.name?' ('+job.name+')':'')+(ooh?'\nThis work was done out of hours (after hours / weekend).':'')+'\n\nExpand each day\'s notes into a clear professional 1-3 sentence comment. Preserve ticket numbers exactly. Return ONLY this format with no preamble:\n\n#sat\n[text or blank]\n\n#sun\n[text or blank]\n\n#mon\n[text or blank]\n\n#tue\n[text or blank]\n\n#wed\n[text or blank]\n\n#thu\n[text or blank]\n\n#fri\n[text or blank]\n\nNotes:\n'+entries.map(function(e){return '#'+e.day+'\n'+e.text;}).join('\n\n');
   try {
     var res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
@@ -1429,17 +1656,17 @@ async function expandWithAI(jid) {
     for(var i=1;i<blocks.length-1;i+=2){
       var day=blocks[i].toLowerCase(), content=(blocks[i+1]||'').trim();
       if(DAYS.indexOf(day)>=0&&content){
-        setEntry(jid,day,content);
-        var ta=document.getElementById('entry-'+jid+'-'+day);
+        setEntry(jid,day,content,ooh);
+        var ta=document.getElementById('entry-'+px+'-'+day);
         if(ta){ta.value=content;ta.classList.add('has-value');}
       }
     }
-    setAIStatus(jid,'Comments expanded - Rollback available','success');
-    setTimeout(function(){setAIStatus(jid,'');},4000);
     render();
+    setAIStatus(px,'Comments expanded - Rollback available','success');
+    setTimeout(function(){setAIStatus(px,'');},4000);
   } catch(err) {
-    clearRollback(jid);
-    setAIStatus(jid,'Error: '+err.message,'error');
+    clearRollback(jid,ooh);
+    setAIStatus(px,'Error: '+err.message,'error');
   } finally {
     btn.disabled=false; btn.innerHTML='&#10022; AI Expand';
   }
@@ -1503,26 +1730,29 @@ function collectJobData(jid,fromIso,toIso) {
     var j=state.jobs.find(function(x){return x.id===id;});
     return j?j.code:'(deleted project)';
   }
-  Object.keys(state.entries).forEach(function(k){
-    var m=k.match(re);
-    if(!m) return;
-    if(jid&&m[1]!==jid) return;
-    var text=state.entries[k];
-    if(!text) return;
-    var dateIso=localDateKey(dateFromWeekDay(m[2],m[3]));
-    if(dateIso<fromIso||dateIso>toIso) return;
-    items.push({dateIso:dateIso,day:m[3],code:codeFor(m[1]),text:text,hours:state.hours['h__'+k]||''});
-  });
-  // Hours summed independently — a day can have hours logged without comment text.
-  Object.keys(state.hours).forEach(function(k){
-    if(k.indexOf('h__')!==0) return;
-    var m=k.slice(3).match(re);
-    if(!m) return;
-    if(jid&&m[1]!==jid) return;
-    var dateIso=localDateKey(dateFromWeekDay(m[2],m[3]));
-    if(dateIso<fromIso||dateIso>toIso) return;
-    var h=parseFloat(state.hours[k]);
-    if(!isNaN(h)) totalHours+=h;
+  [false,true].forEach(function(ooh){
+    var ents=entMap(ooh), hrs=hrsMap(ooh);
+    Object.keys(ents).forEach(function(k){
+      var m=k.match(re);
+      if(!m) return;
+      if(jid&&m[1]!==jid) return;
+      var text=ents[k];
+      if(!text) return;
+      var dateIso=localDateKey(dateFromWeekDay(m[2],m[3]));
+      if(dateIso<fromIso||dateIso>toIso) return;
+      items.push({dateIso:dateIso,day:m[3],code:codeFor(m[1]),text:text,hours:hrs['h__'+k]||'',ooh:ooh});
+    });
+    // Hours summed independently — a day can have hours logged without comment text.
+    Object.keys(hrs).forEach(function(k){
+      if(k.indexOf('h__')!==0) return;
+      var m=k.slice(3).match(re);
+      if(!m) return;
+      if(jid&&m[1]!==jid) return;
+      var dateIso=localDateKey(dateFromWeekDay(m[2],m[3]));
+      if(dateIso<fromIso||dateIso>toIso) return;
+      var h=parseFloat(hrs[k]);
+      if(!isNaN(h)) totalHours+=h;
+    });
   });
   items.sort(function(a,b){ return a.dateIso<b.dateIso?-1:(a.dateIso>b.dateIso?1:0); });
   return {items:items,totalHours:totalHours};
@@ -1545,6 +1775,7 @@ function buildAiReviewPrompt(job,from,to,data) {
     var h=parseFloat(it.hours);
     return it.dateIso+' '+DAY_LABELS[DAYS.indexOf(it.day)]
       +(allProjects?' ['+it.code+']':'')
+      +(it.ooh?' [OOH]':'')
       +(!isNaN(h)&&h>0?' ('+fmtH(h)+'h)':'')+': '+it.text;
   });
   // Keep the prompt within a sane size for very long ranges: drop oldest lines first.
@@ -1554,7 +1785,8 @@ function buildAiReviewPrompt(job,from,to,data) {
     +(allProjects?'all work across every project in the period.':'this project.')+'\n\n'
     +(allProjects?'Scope: all projects (the project code for each log line is shown in [brackets])':'Project: '+job.code+(job.name?' - '+job.name:''))+'\n'
     +'Period: '+from+' to '+to+'\n'
-    +'Total hours logged in period: '+fmtH(data.totalHours)+'h across '+data.items.length+' logged days\n\n';
+    +'Total hours logged in period: '+fmtH(data.totalHours)+'h across '+data.items.length+' logged days\n'
+    +'Lines tagged [OOH] were worked out of hours (after hours / weekends).\n\n';
   var structure;
   if(aiReviewStyle==='timeline'){
     structure='Structure the output as a chronological month-by-month narrative: for each month in the period that has logged work, a short heading (e.g. "Feb 2026") followed by 2-4 sentences describing what was worked on and delivered that month'
@@ -1683,10 +1915,12 @@ function emailSummary() {
   var ocSpans=onCallSpansForWeek(currentWeekStart);
   if(ocSpans.length) body='*** ON-CALL WEEK ***\nOn-call: '+ocSpans.map(formatOnCallSpan).join('; ')+'\n\n'+body;
   state.jobs.forEach(function(job){
-    var lines=[]; DAYS.forEach(function(day){ var v=getEntry(job.id,day).trim(); if(v) lines.push('#'+day+'\n'+v); });
-    if(!lines.length) return;
-    hasContent=true;
-    body+='---------------------------\nJOB CODE: '+job.code+(job.name?' - '+job.name:'')+'\n---------------------------\n'+lines.join('\n\n')+'\n\n';
+    [false,true].forEach(function(ooh){
+      var lines=[]; DAYS.forEach(function(day){ var v=getEntry(job.id,day,ooh).trim(); if(v) lines.push('#'+day+'\n'+v); });
+      if(!lines.length) return;
+      hasContent=true;
+      body+='---------------------------\nJOB CODE: '+job.code+(job.name?' - '+job.name:'')+(ooh?' (OUT OF HOURS)':'')+'\n---------------------------\n'+lines.join('\n\n')+'\n\n';
+    });
   });
   if(!hasContent){ alert('No entries to email for this week.'); return; }
   var subj=(ocSpans.length?'[ON-CALL] ':'')+'Timesheet - '+weekStr;
@@ -1698,12 +1932,14 @@ function exportExcel() {
   var dates=getWeekDates(currentWeekStart);
   var rawRows=[];
   state.jobs.forEach(function(job){
-    DAYS.forEach(function(day,i){
-      var v=getEntry(job.id,day).trim(), h=getHours(job.id,day);
-      if(v||h) rawRows.push({
-        date:dates[i],
-        dateStr:dates[i].toLocaleDateString('en-NZ',{day:'2-digit',month:'2-digit',year:'numeric'}),
-        code:job.code, comment:v, hours:h?parseFloat(h):''
+    [false,true].forEach(function(ooh){
+      DAYS.forEach(function(day,i){
+        var v=getEntry(job.id,day,ooh).trim(), h=getHours(job.id,day,ooh);
+        if(v||h) rawRows.push({
+          date:dates[i],
+          dateStr:dates[i].toLocaleDateString('en-NZ',{day:'2-digit',month:'2-digit',year:'numeric'}),
+          code:job.code+(ooh?' (OOH)':''), comment:v, hours:h?parseFloat(h):''
+        });
       });
     });
   });
@@ -1723,6 +1959,9 @@ async function clearWeek() {
   var wk=weekKey(currentWeekStart);
   Object.keys(state.entries).forEach(function(k){if(k.indexOf('__'+wk+'__')>=0) delete state.entries[k];});
   Object.keys(state.hours).forEach(function(k){if(k.indexOf('__'+wk+'__')>=0) delete state.hours[k];});
+  [state.oohEntries,state.oohHours,state.oohClaims].forEach(function(map){
+    Object.keys(map).forEach(function(k){if(k.indexOf('__'+wk+'__')>=0) delete map[k];});
+  });
   saveState(); render();
 }
 
@@ -1752,7 +1991,8 @@ function ghConfigured() {
 
 // True when local state holds real timesheet data (vs a fresh/blank device).
 function stateHasData() {
-  return !!(state.jobs.length || Object.keys(state.entries).length || Object.keys(state.hours).length);
+  return !!(state.jobs.length || Object.keys(state.entries).length || Object.keys(state.hours).length
+    || Object.keys(state.oohEntries).length || Object.keys(state.oohHours).length);
 }
 
 function ghApiUrl() {
@@ -2125,10 +2365,10 @@ function searchEntries(q) {
   var fromIso=document.getElementById('searchFrom').value;
   var toIso=document.getElementById('searchTo').value;
   var re=/^(.+?)__(\d{4}-\d{2}-\d{2})__(sat|sun|mon|tue|wed|thu|fri)$/;
-  Object.keys(state.entries).forEach(function(k){
+  [false,true].forEach(function(ooh){ Object.keys(entMap(ooh)).forEach(function(k){
     var m=k.match(re);
     if(!m) return;
-    var text=state.entries[k];
+    var text=entMap(ooh)[k];
     if(!text) return;
     var jid=m[1], wk=m[2], day=m[3];
     if(searchProjFilter&&jid!==searchProjFilter) return;
@@ -2142,8 +2382,8 @@ function searchEntries(q) {
     var dateIso=localDateKey(dateFromWeekDay(wk,day));
     if(fromIso&&dateIso<fromIso) return;
     if(toIso&&dateIso>toIso) return;
-    out.push({wk:wk, day:day, dateIso:dateIso, jid:jid, job:job, text:text, hours:state.hours['h__'+k]||''});
-  });
+    out.push({wk:wk, day:day, dateIso:dateIso, jid:jid, job:job, text:text, hours:hrsMap(ooh)['h__'+k]||'', ooh:ooh});
+  }); });
   out.sort(function(a,b){ return a.dateIso<b.dateIso?1:(a.dateIso>b.dateIso?-1:0); });
   return out;
 }
@@ -2179,8 +2419,9 @@ function renderSearchResults(q) {
       ? '<span class="job-code-badge">'+esc(r.job.code)+'</span>'
       : '<span class="sr-date">(deleted project)</span>';
     var hrs=parseFloat(r.hours);
-    html+='<button class="search-result" onclick="goToSearchResult(\''+r.wk+'\',\''+r.jid+'\')">'
+    html+='<button class="search-result" onclick="goToSearchResult(\''+r.wk+'\',\''+r.jid+'\''+(r.ooh?',1':'')+')">'
       +'<div class="sr-meta">'+badge
+      +(r.ooh?'<span class="ooh-tag">OOH</span>':'')
       +'<span class="sr-date">'+DAY_LABELS[DAYS.indexOf(r.day)]+' '+formatDate(d)+'</span>'
       +(!isNaN(hrs)&&hrs>0?'<span class="sr-hours">'+fmtH(hrs)+'h</span>':'')
       +'</div>'
@@ -2190,13 +2431,13 @@ function renderSearchResults(q) {
   if(capped) html+='<div class="search-hint">Showing first '+MAX+' matches &mdash; refine your search.</div>';
   el.innerHTML=html;
 }
-function goToSearchResult(wk,jid) {
+function goToSearchResult(wk,jid,ooh) {
   closeModal('searchModal');
   currentWeekStart=new Date(wk+'T00:00:00');
   clearDraft();
   switchTab('entry',document.querySelector('.tab-bar .tab'));
   render();
-  var card=document.getElementById('card-'+jid);
+  var card=document.getElementById('card-'+(ooh?'ooh-':'')+jid);
   if(card){
     card.classList.add('open');
     card.scrollIntoView({block:'start'});

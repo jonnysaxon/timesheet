@@ -47,7 +47,7 @@ install, or API calls. There is nothing to compile or lint.
 All state lives in a single `state` object persisted to `localStorage`:
 
 ```
-state = { jobs, entries, hours, rollbacks, weekJobs, onCall, settings, aiSummaries }
+state = { jobs, entries, hours, oohEntries, oohHours, oohClaims, rollbacks, weekJobs, onCall, settings, aiSummaries }
 ```
 
 - **Storage key:** `timesheet_v5`. Two small device-local keys live *outside*
@@ -63,10 +63,22 @@ state = { jobs, entries, hours, rollbacks, weekJobs, onCall, settings, aiSummari
 - **Composite keys:**
   - entries → `jobId__YYYY-MM-DD__day`
   - hours → `h__jobId__YYYY-MM-DD__day`
-  - rollbacks → `rb__jobId__YYYY-MM-DD`
+  - rollbacks → `rb__jobId__YYYY-MM-DD` (out-of-hours card: `rb__jobId__YYYY-MM-DD__ooh`)
   These string formats are load-bearing (regexes parse them in `repairWeekJobs`,
   `weekHasData`, etc.). Don't change them without updating every parser and
   adding a migration.
+- **Out of hours (OOH):** `state.oohEntries` / `state.oohHours` mirror
+  `entries` / `hours` with the *same* key formats; `state.oohClaims` is keyed like
+  entries with `'ot'` (overtime) or `'toil'` (time in lieu); absent = not claimed.
+  The data layer takes an optional trailing `ooh` flag (`getEntry/setEntry/
+  getHours/setHours(jid,day,…,ooh)`, `jobWeekTotal`, rollbacks); `entMap(ooh)` /
+  `hrsMap(ooh)` pick the map. On the Entry tab each job can show a linked amber
+  OOH card (`renderJobCard(job,dates,true)`, element ids `card-ooh-<jid>`,
+  `entry-ooh-<jid>-<day>`), visible when the week has OOH data or the user tapped
+  **+ Out of hours** (in-memory `oohOpened`, reset on week change). OOH data counts
+  as week data (`dayHasData` / `weekHasData` / `repairWeekJobs`) and counts toward
+  project budgets (`jobTotalHours` = normal + `jobOohHours`). Any new code that
+  walks entries/hours (exports, search, AI, deletes) must also cover the OOH maps.
 - **Per-week project visibility:** `state.weekJobs[weekKey]` is the explicit job
   list for a week. A week becomes "persistent" once it has hours/entries or is
   explicitly saved; otherwise edits go to an in-memory `weekDraft` until **Save**.
