@@ -112,7 +112,8 @@ body.light .job-card:hover{border-color:#b0b8d8;}
 .job-card-actions{grid-area:actions;display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;}
 .job-card-actions .btn{padding:4px 8px;font-size:10px;border-radius:6px;line-height:1.2;}
 @media(min-width:700px){.job-card-header{grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"main total actions";align-items:center;}.job-card-actions{align-self:center;}}
-.chevron{font-size:12px;color:var(--text3);transition:transform .2s;}
+.chevron{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;margin:0 0 0 -6px;padding:0;background:none;border:none;border-radius:5px;cursor:pointer;font-family:var(--sans);font-size:14px;line-height:1;color:var(--text2);transition:transform .2s,color .15s;}
+.chevron:hover{color:var(--text);}
 .job-card.open .chevron{transform:rotate(180deg);}
 .job-card-body{display:none;padding:0 16px 16px;border-top:1px solid var(--border);}
 .job-card.open .job-card-body{display:block;}
@@ -1295,6 +1296,8 @@ function renderJobCard(job,dates,ooh) {
   return '<div class="job-card'+(ooh?' ooh-card':'')+'" id="card-'+px+'">'
     +'<div class="job-card-header" onclick="toggleCard(\''+px+'\')">'
     +'<div class="job-card-main">'
+    // Chevron sits outside .job-card-actions so its click bubbles to the header's toggleCard.
+    +'<button type="button" class="chevron" aria-label="Expand or collapse">&#9660;</button>'
     +'<span class="job-code-badge">'+esc(job.code)+'</span>'
     +(ooh?'<span class="ooh-tag">OUT OF HOURS</span>':'')
     +(job.name?'<span class="job-name">'+esc(job.name)+'</span>':'')
@@ -1302,7 +1305,6 @@ function renderJobCard(job,dates,ooh) {
     +totalBadge
     +'<div class="job-card-actions" onclick="event.stopPropagation()">'
     +actions
-    +'<span class="chevron">&#9660;</span>'
     +'</div></div>'
     +'<div class="job-card-body">'
     +'<div class="ai-toolbar">'
