@@ -18,6 +18,16 @@ No build step, no server, no account. Open `index.html` and start typing.
   projects only).
 - **Projects tab** — add/edit/close/reopen project codes, set an optional total
   hour budget, and see hours logged vs. budget (with over-budget highlighting).
+- **Out-of-hours time** — tap **+ Out of hours** on a project card to add a
+  linked amber card for after-hours / weekend work on that project. It has its
+  own notes, hours and week total, appears as separate `OOH` rows in the Hours
+  tab (with a Normal / Out of hours / Total split), in the Summary, email, Excel
+  export, search and AI reviews, and counts toward the project's hour budget.
+  Each project's **Details** on the Projects tab lists every out-of-hours day so
+  you can mark it as claimed as **Overtime** or **Time in lieu**, with totals of
+  what's still unclaimed.
+- **Copy a day** — the ⧉ button next to each day copies that day's notes to the
+  clipboard, ready to paste into another day or app.
 - **Summary tab** — a clean, copyable text summary of the week's notes per
   project, ready to email.
 - **Hours tab** — a per-project × per-day hours grid with row/column totals.
